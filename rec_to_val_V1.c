@@ -180,8 +180,8 @@ slong start_init,length_init;
 if(have_init_vals){
     start_init=readFileRationals(&Num_inits,&Den_inits,n_val,start_comp,filename_initial);
     length_init=start_comp-start_init;
-    SHOW_MEMORY_USAGE;
-    //print_memory_usage();
+    //SHOW_MEMORY_USAGE;
+    print_memory_usage();
 } else {
 	//fmpz_poly_mat_t Deq;
 	slong d_tcoeff=start_comp-n_val;
@@ -215,8 +215,8 @@ fmpz * Den_inhom;
 
 if(have_inhom){
 	readFileRationals(&Num_inhom,&Den_inhom,n_val,end+1,filename_inhom);
-	SHOW_MEMORY_USAGE
-	//print_memory_usage();
+	//SHOW_MEMORY_USAGE
+	print_memory_usage();
 }
 
 
@@ -411,8 +411,8 @@ while(increase_primes){
 
     printf("Computing residues combined: ");
     TIMEIT_ONCE_STOP;
-    SHOW_MEMORY_USAGE;
-    //print_memory_usage();
+    //SHOW_MEMORY_USAGE;
+    print_memory_usage();
 
 
 //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -587,8 +587,8 @@ for(l=0;l<n_primes/CHUNK;l++){
 
 printf("Everything combined: ");
 TIMEIT_ONCE_STOP;
-SHOW_MEMORY_USAGE;
-//print_memory_usage();
+//SHOW_MEMORY_USAGE;
+print_memory_usage();
 
 fmpz_poly_mat_clear(Rec);
 fmpz_mat_clear(Num_inits);

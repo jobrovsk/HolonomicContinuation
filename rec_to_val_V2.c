@@ -45,23 +45,26 @@ slong readFileRationals(fmpz_mat_t * Val_Num,fmpz** Denominators,slong n_val, sl
 char * get_temp_file_name(char * output,const char * filename_template_temp,slong i);
 
 const slong CHUNK=64;
+
+
+/* The optimal size of the primes depends on the CPU. 
+   Try both possibillities to see which one is faster. (Uncomment accordingly */
+
 //const ulong FIRST_PRIME=1512762481;//1514687359;//< 2^(30.5)
 //const ulong BITS=31;
 const ulong FIRST_PRIME=6085156183315683391; //<2^(62.5)
 const ulong BITS=63;
+
+
+
 const ulong PACKED_CHUNK=(CHUNK * BITS - 1) / FLINT_BITS + 1;
-
-
 
 int main(int argc, char* argv[]){
 omp_get_num_procs();
 
 //const ulong firstprime=18446744073708659869U; //<2^(64)
 
-//const slong MAX_NUM_PRIMES=32768;//If more primes are needed this might point to an error
 
-
-//flint_printf("num_threads: %wd\n",flint_get_num_threads());
 
 //slong start;//index of the first initial value
 slong k; //index of the next value which will be computed

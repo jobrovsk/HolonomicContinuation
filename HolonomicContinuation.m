@@ -725,7 +725,7 @@ degrees
 ]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Compute general solutions (slow) for initial values*)
 
 
@@ -743,11 +743,7 @@ diffeq=MakeIntegerDE[diffeqIn,g[z]];
 
 {start,nlogs,freecoeffs}=GetAnsatzParametersInternal[diffeq,g,z,a,teststart,testnlogs,OptionValue["Number of coeffs to get parameters"]];
 
-ord=Max[Cases[diffeq,\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->n,Infinity],0]; (* Order of the differential equation *)
+ord=Max[Cases[diffeq,Derivative[n_][g][z]->n,Infinity],0]; (* Order of the differential equation *)
 ncoeffs=nc+If[nlogs>0||start<0,ord+Max[-start,0],0]+5; 
 
 If[True||Global`PrintStep===True,
