@@ -60,16 +60,7 @@ Options:
 Begin["`Private`"]
 
 
-PathsToExecutibles=Association@@Table["qftquad"<>ToString[n]->"/zlocal/sdb1/qftquad"<>ToString[n]<>
-	"/jobrovsk/pub/RecToValuesExecutables",{n,{1,2,3,4,6,7,8,9,10,11}}];
-PathsToExecutibles=Join[PathsToExecutibles,
-Association[
-"qftquad5"->"/zvol/qftquad1/jobrovsk/qftquad5/pub/RecToValuesExecutables",
-"roselend"->"/zlocal/nvme0n1p4/jobrovsk/RecToValues",
-"pc06"->"/zlocal/nvme0n1p4/jobrovsk/RecToValues",
-"Jakob-Geekom" -> "/home/jakob/JKU/Doktorarbeit/RecToValues",
-"mach2"->"/apps/risc/FLINT/bin"
-]]
+PathsToExecutibles=<||>;
 BackendRecToValuesFLINT="rec_to_val_V2";
 
 
@@ -93,7 +84,7 @@ RecToValuesFLINT::startgeend="Warning: The given endComp=`1` is < startComp=`2`,
 RecToValuesFLINT::cantwriteoutput="Error: Cannot write to Output-Path `1` ";
 RecToValuesFLINT::optionmalformed="Error: Option[\"`1`\"] has malformed value `2`";
 Options[RecToValuesFLINT]={
-"PathToExecutible"->"",
+"PathToExecutible"->DirectoryName[$InputFileName],
 "Overwrite"->False,
 "Details"->False,
 "NumberOfThreads"->1,
@@ -237,7 +228,7 @@ DeqToRecFlint::notempty="Error: `1` is not an empty directory.";
 DeqToRecFlint::cantwriteoutput="Error: Cannot write to Output-Path `1` ";
 
 Options[DeqToRecFlint]={
-"PathToExecutible"->"",
+"PathToExecutible"->DirectoryName[$InputFileName],
 "Overwrite"->False,
 "Details"->False,
 "WriteOutputToFile"->False

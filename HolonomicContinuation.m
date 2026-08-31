@@ -5,9 +5,12 @@
 
 
 (* ::Input::Initialization:: *)
-HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1 (08/29/2026)";
+HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.1 (08/31/2026)";
 If[TrueQ[$Notebooks],CellPrint[Cell[BoxData[HolonomicContinuationVersion],"Print",FontColor->RGBColor[0,0,0],CellFrame->0.5,Background->RGBColor[0.796887,0.789075,0.871107]]],
 Print[HolonomicContinuationVersion]];
+
+
+Get[FileNameJoin[{DirectoryName[$InputFileName],"RecToValuesFLINT_V3.3.m"}]];
 
 
 (* ::Input::Initialization:: *)
@@ -115,7 +118,7 @@ The input variables are
 'start': the lowest power of 'z' of the solution expansion. 
 'nlogs': the highest power of the log. 
 'nc': the highest power in 'z' of the desired solution expansion.
-'noKernels'n: If the option UseFlintByC is set to False, the Mathematica parallelization can be utilized. If a certain number of kernels are launched, they will be used. Alternatively, one define with 'noKernels' a positive integer. Then the kernels are launched as optimally needed but does not load more than noKernels.
+'noKernels'n: If the option UseFlintByC is set to False, the Mathematica parallelization can be utilized. If a certain number of kernels are launched, they will be used. Alternatively, one define with 'noKernels' a positive integer. Then the kernels are launched as optimally needed but does not load more than noKernels. If UseFlintByC is set to True, then up to 'noKernels' many threads are used by the C-backend.
 
 Remarks: 
 'receq' can be derived by the command REtoDE.
@@ -999,35 +1002,37 @@ Map[fu,f]
 ]
 
 
-(* ::Input::Initialization:: *)
-GenerateRelationFromRecC[{rec_,F_[n_],h_:dummy},{initialSubstIn_,a_},no_,IsInhom_,DigitPrec_:Infinity]:=
-Module[{result,check,maxNo,initialSubst,nu,extraValue},
+(* ::Code::Initialization:: *)
+GenerateRelationFromRecC[{rec_,F_[n_],h_:dummy},{initialSubstIn_,a_},no_,IsInhom_,DigitPrec_:Infinity,maxKernels_Integer]:=
+Module[{result,check,maxNo,initialSubst,nu,extraValue,testvals,randomsubst,vars},
 
 nu=NumberOfInitialValues[rec,F[n]];
 maxNo=Map[#[[1,1]]&,initialSubstIn]//Max;
 extraValue=maxNo-nu;
 
 If[extraValue<5,
-Print["Warning: I do not have suffently many initial values; I need at least :",nu,"plus 5 extra values for safety/checking reasons."]'
+Print["Warning: I do not have suffently many initial values; I need at least :",nu," plus 5 extra values for safety/checking reasons."]'
 ];
 extraValue=Min[extraValue,50];
 initialSubst=Select[initialSubstIn,#[[1,1]]<maxNo-extraValue&];
 
 result=RecToValuesFLINT`RecToValuesFLINT[{rec,F[n]},{initialSubst,a},no,DigitPrec,
 	"Details"->True,
-	"NumberOfThreads"->10,
+	"NumberOfThreads"->maxKernels,
 	"Inhomogeneous"->IsInhom,
 	"WriteOutputToFile"->False,
 "Backend"->"rec_to_val_V2"
 ];
-check=Table[a[k],{k,maxNo-extraValue,maxNo}];
-check=(check/.initialSubstIn)-(check/.initialSubstIn);
-check=Union[check];
-If[Complement[check,{0}]=!={},
-Print[check];
-Print[{(check/.initialSubstIn),(check/.initialSubstIn)}];
-Print["Error: the result does not agree with the initial values..."];
-Abort[];
+testvals=Table[a[k],{k,maxNo-extraValue,maxNo}];
+vars=Union[Variables[Values[initialSubst]],Variables[Values[result]]];
+randomsubst=Thread[vars->RandomInteger[{-100,100},Length[vars]]];
+check=(testvals/.result/.randomsubst)-(testvals/.initialSubstIn/.randomsubst);
+check=Max[Abs[check]];
+If[!TrueQ[check<=1000 10^(-DigitPrec)],
+	Print[check];
+	Print[{(testvals/.result),(testvals/.initialSubstIn)}];
+	Print["Error: the result does not agree with the initial values..."];
+	Abort[];
 ];
 Join[initialSubst,result]
 ]
@@ -1170,15 +1175,6 @@ f/.MapThread[Rule,{var,varS}]
 ];
 
 
-(* ::Input:: *)
-(**)
-
-
-(* ::Input::Initialization:: *)
-Clear[PrepareNSParallel];
-
-
-
 (* ::Input::Initialization:: *)
 Clear[MyNullSpaceQ];
 
@@ -1188,6 +1184,7 @@ MyNullSpaceQ[MIn_]:=If[Global`AlwaysP===True||System`Parallel`$SubKernel===False
 
 
 (* ::Input::Initialization:: *)
+Clear[PrepareNSParallel];
 PrepareNSParallel[M_,p_,no_,solNo_]:=
 Module[{ML,pL,solL,solNoNew,pprod,sol},
 pL=Table[NextPrime[p,k],{k,1,no}];
@@ -1342,7 +1339,7 @@ Options[GetCoeffSubsFast]={UseFlintByC->False};
 
 
 (* ::Input::Initialization:: *)
-GetCoeffSubsFast[initialSIn_,de_,inputrec_,g_,h_,z_,a_,n_,noIn_,nlogs_,start_,precision_,maxKernels_Integer:0,opts___Rule]:=
+GetCoeffSubsFast[initialSIn_,de_,inputrec_,g_,h_,z_,a_,n_,noIn_,nlogs_,start_,precision_,maxKernels_Integer:0,opts:OptionsPattern[]]:=
 Module[{initialS,no,ord,initialSN,varKnown,initialStep,recStep,resL,prec,res,aVar},
 no=noIn;
 
@@ -1350,7 +1347,7 @@ initialS=Complement[Map[#[[2]]&,initialSIn]//Variables,Map[#[[1]]&,initialSIn]//
 initialS=Join[MapThread[Rule,{initialS,initialS}],initialSIn];
 
 
-UseCCode=UseFlintByC/.{opts}/.Options[GetCoeffSubsN];
+UseCCode=OptionValue[UseFlintByC];
 If[UseCCode===True&&Head[(?"RecToValuesFLINT`*")]===Missing,
 Print["Warning: the package RecToValuesFLINT is not loaded; I use the standard Mathematica code..."];
 UseCCode=False
@@ -1358,7 +1355,7 @@ UseCCode=False
 
 If[Max[Map[#[[1,1]]&,initialS]]-30>no,
 no=Max[Map[#[[1,1]]&,initialS]];
-Print["Warning: the number of initial values are larger than the number of values to be calculated; this might cause problems. Thus I increase the number to ",no," guarantee correctness."
+Print["Warning: the number of initial values are larger than the number of values to be calculated; this might cause problems. Thus I increase the number to ",no," to guarantee correctness."
 ];
 ];
 
@@ -1399,6 +1396,9 @@ resL
 
 
 (* ::Code:: *)
+(**)
+
+
 Clear[JEvalHorner]
 JEvalHorner[plist_?VectorQ,val_?IntegerQ]:=Fold[(val #1+#2)&,0,plist]
 
@@ -1427,7 +1427,7 @@ Module[{hh,rec,k,i,AAA,curNum,den,ord,values={},recK,oldDen,mul,vecGCD,lIndex,tI
 		curNum[[;;-2]]*=mul;
 		If[Mod[k,50]==0,
 			vecGCD=GCD[GCD@@curNum,den];
-			 (*is here almost always 1*)
+			 (*vecGCD is here almost always 1*)
 			curNum/=vecGCD;
 			den/=vecGCD;
 		]	
@@ -1452,7 +1452,7 @@ h2[i_Integer]:=inhom[[i+1]] ;
 
 
 If[UseCCode===True,
-{time,substLogPart}=GenerateRelationFromRecC[{rec,g[n],h2},{initialSubst,A},no,False,If[LogDeg===0,precision,Infinity]]//AbsoluteTiming,
+{time,substLogPart}=GenerateRelationFromRecC[{rec,g[n],h2},{initialSubst,A},no,False,If[LogDeg===0,precision,Infinity],maxKernels]//AbsoluteTiming,
 
 numberKernels=Length[Kernels[]];
 
@@ -1622,7 +1622,7 @@ initialSubst=Select[initialS,!FreeQ[#[[1]],A]&];
 Print["ByteCount in initialSubst: ",initialSubst//ByteCount];
 
 If[UseCCode===True,
-{time,substLogPart}=GenerateRelationFromRecC[{rec,g[n],h2},{initialSubst,A},no,True,If[LogDeg===0,precision,Infinity]]//AbsoluteTiming,
+{time,substLogPart}=GenerateRelationFromRecC[{rec,g[n],h2},{initialSubst,A},no,True,If[LogDeg===0,precision,Infinity],maxKernels]//AbsoluteTiming,
 
 numberKernels=Length[Kernels[]];
 If[numberKernels<maxKernels,
@@ -1647,7 +1647,7 @@ substLogN[[k,2]]=N[substLogN[[k,2]],precision]/.A[b_]:>A[Round[b]],
 {substLogN,substLogPart,inhomExpr} ]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*Match points*)
 
 
@@ -1783,7 +1783,7 @@ sol=NSolve[eqsys,Join[freecoeffs],workingprecision-mwp];
 If[sol==={},
 {"Failed",{}},
 sol=sol[[1]]/.A_[B_]:>A[Round[B]];
-{coeff /. sol, sol}
+{N[Abs[coeff /. sol],10], sol}
 ]
 ]
 
