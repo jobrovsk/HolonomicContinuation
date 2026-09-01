@@ -204,7 +204,7 @@ GetBestMatchSetUp2::usage=""*)
 Begin["`Private`"]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*Transform to DEs at different points*)
 
 
@@ -221,44 +221,20 @@ Options[FindIndicialShift]={"Initial shift"->7,"Details"->"no"};
 
 FindIndicialShift[diffeqz_,g_,z_,\[Alpha]_,OptionsPattern[]]:=Module[{r,j,Z,k,inishift,shift,i,n,test,indicial1,indicial2,indicial3,indicial4},
 inishift=OptionValue["Initial shift"];
-r=Exponent[diffeqz /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "j_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]:>Z^j,Z]; (* Order of the differential equation *)
+r=Exponent[diffeqz /. Derivative[j_][g][z]:>Z^j,Z]; (* Order of the differential equation *)
 shift=inishift;
 test=True;
-indicial1=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-1+k+\[Alpha]) ,1]/. k->0]]];
-indicial2=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-2+k+\[Alpha]) ,1]/. k->0]]];
-indicial3=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-3+k+\[Alpha]) ,1]/. k->0]]];
-indicial4=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-4+k+\[Alpha]) ,1]/. k->0]]];
+indicial1=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-1+k+\[Alpha]) ,1]/. k->0]]];
+indicial2=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-2+k+\[Alpha]) ,1]/. k->0]]];
+indicial3=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-3+k+\[Alpha]) ,1]/. k->0]]];
+indicial4=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-4+k+\[Alpha]) ,1]/. k->0]]];
 test=Not[{indicial1,indicial2,indicial3,indicial4}==={0,0,0,0}];
 While[test,
 shift=shift-1;    If[OptionValue["Details"]=="yes",Print[shift]]; 
 indicial1=indicial2;
 indicial2=indicial3;
 indicial3=indicial4;
-indicial4=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-4+k+\[Alpha]) ,1]/. k->0]]];
+indicial4=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-4+k+\[Alpha]) ,1]/. k->0]]];
  If[OptionValue["Details"]=="yes",Print[{indicial1,indicial2,indicial3,indicial4}]];
 test=Not[{indicial1,indicial2,indicial3,indicial4}==={0,0,0,0}]];
 shift ]
@@ -268,17 +244,9 @@ shift ]
 Options[CheckIndicial]={"Initial shift"->7,"Details"->"no"};
 
 CheckIndicial[diffeqz_,g_,z_,\[Alpha]_,OptionsPattern[]]:=Module[{r,shift,j,Z,indicial,k,n,sol,solseq,integerq,halfintegerq},
-r=Exponent[diffeqz /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "j_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]:>Z^j,Z]; (* order of the differentia equation *) 
+r=Exponent[diffeqz /. Derivative[j_][g][z]:>Z^j,Z]; (* order of the differentia equation *) 
 shift=FindIndicialShift[diffeqz,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]];
-indicial=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift+k+\[Alpha]) ,1]/. k->0]]];
+indicial=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift+k+\[Alpha]) ,1]/. k->0]]];
 sol=Solve[indicial==0,\[Alpha]];
 solseq=Table[sol[[i,1,2]],{i,1,Length[sol]}]; (* list of values of the solutions to the indicial equation *)
 integerq=AllTrue[solseq,IntegerQ]; (* finding out if all solutions consist of only integers *) 
@@ -290,47 +258,26 @@ True,Print["The indicial equation has solutions outside of the set of integers a
 indicial ]
 
 
-(* ::Input::Initialization:: *)
+InputForm[Derivative[j_][g]]
+
+
+(* ::Code::Initialization:: *)
 GetDEQInf[deIn_, {s_,spt_}, g_,z_]:=
 Module[{de=deIn,derivsubs,ord,sign,inhompart,exp,j},
 ord=Max[Cases[{de},Derivative[A_][_][_]->A,Infinity],0];
-derivsubs={\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "1", ")"}],
-Derivative],
-MultilineFunction->None]\)[s]->z^2*\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "1", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]};
+derivsubs={Derivative[1][g][s]->z^2*Derivative[1][g][z]};
 sign=If[spt===-Infinity,-1,1];
-For[j=1,j<=ord,j++,
-derivsubs=Append[derivsubs,D[g[s],{s,j+1}]->-sign*Expand[z^2*D[derivsubs[[j,2]],z]]];
-];
-de=Collect[de /. derivsubs/. s->sign/z /.{g[_]->g[z]},{\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z],g[z]},Expand];
-inhompart=de /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->0 /. g[z]->0;
+Do[
+	derivsubs=Append[derivsubs,D[g[s],{s,j+1}]->-sign*Expand[z^2*D[derivsubs[[j,2]],z]]];
+,{j,ord}];
+de=Collect[de /. derivsubs/. s->sign/z /.{g[_]->g[z]},{Derivative[_][g][z],g[z]},Expand];
+inhompart=de /. Derivative[_][g][z]->0 /. g[z]->0;
 If[inhompart=!=0,
 de=de-inhompart;
-de=Collect[D[-inhompart,z]*de-(-inhompart)*D[de,z],{g[z],\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]},Expand];
+de=Collect[D[-inhompart,z]*de-(-inhompart)*D[de,z],{g[z],Derivative[_][g][z]},Expand];
 ];
 exp=Exponent[Expand[de /. z->1/z],z];
-de=Collect[z^exp*de,{g[z], \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]},Expand];
+de=Collect[z^exp*de,{g[z], Derivative[_][g][z]},Expand];
 MakeIntegerDE[de,g[z]]
 ]
 
@@ -340,20 +287,12 @@ Options[GetDEQspt]={"Print s-point"->"no","Check indicial equation"->"no","Initi
 
 GetDEQspt[diffeqs_,{s_,spt_},g_,z_,qlist_,opts:OptionsPattern[]]:=Module[{diffeqz,inhompart,hompart,homdiffeqz,res},
 diffeqz=GetDEQsptInternal[diffeqs,{s,spt},g,z,qlist,opts];
-inhompart=diffeqz /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->0 /. g[z]->0; (* inhomogeneous part of the differential equation *) 
+inhompart=diffeqz /. Derivative[_][g][z]->0 /. g[z]->0; (* inhomogeneous part of the differential equation *) 
 
 hompart=diffeqz-inhompart; (* homogeneous part of the differential equation *) 
 
 
-res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]},Expand]]; (* homogenization of the differential equation (only if needed) *)
+res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],Derivative[_][g][z]},Expand]]; (* homogenization of the differential equation (only if needed) *)
 If[OptionValue["Print s-point"]=="yes",Print[spt],Null];If[OptionValue["Check indicial equation"]=="no",Null,CheckIndicial[res,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
 MakeIntegerDE[res,g[z]]
  ]
@@ -361,75 +300,23 @@ MakeIntegerDE[res,g[z]]
 
 (* ::Input::Initialization:: *)
 GetDEQsptInternal[diffeqs_,{s_,spt_},g_,z_,qlist_,OptionsPattern[]]:=Module[ {nderiv,diffeqz,n,derivsubs,Z,newderiv,j},
-nderiv=Exponent[diffeqs /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[s]->Z^n,Z]+3;
+nderiv=Exponent[diffeqs /. Derivative[n_][g][s]->Z^n,Z]+3;
 diffeqz=Which[
-Not[MemberQ[qlist,spt]] && spt<0,   Collect[diffeqs /. s->z+spt /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z+spt]->\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n", ")"}],
-Derivative],
-MultilineFunction->None]\)[z] /. g[z+spt]->g[z] ,{\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z],g[z]},Expand],
-Not[MemberQ[qlist,spt]] && spt>0,   Collect[diffeqs /. s->spt-z /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[spt-z]->(-1)^n \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n", ")"}],
-Derivative],
-MultilineFunction->None]\)[z] /. g[spt-z]->g[z] ,{\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z],g[z]},Expand],
+Not[MemberQ[qlist,spt]] && spt<0,   Collect[diffeqs /. s->z+spt /. Derivative[n_][g][z+spt]->Derivative[n][g][z] /. g[z+spt]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
+Not[MemberQ[qlist,spt]] && spt>0,   Collect[diffeqs /. s->spt-z /. Derivative[n_][g][spt-z]->(-1)^n Derivative[n][g][z] /. g[spt-z]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
 MemberQ[qlist,spt] && spt<0,     
-derivsubs={\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "1", ")"}],
-Derivative],
-MultilineFunction->None]\)[s]->1/2/z*\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "1", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]};
+derivsubs={Derivative[1][g][s]->1/2/z*Derivative[1][g][z]};
 For[j=1,j<=nderiv,j++,
 newderiv=D[g[s],{s,j+1}]->Expand[1/2/z*D[derivsubs[[j,2]],z]];
 derivsubs=Append[derivsubs,newderiv];
 ];
-Collect[diffeqs /. derivsubs/. s->z^2+spt /. g[z^2+spt]->g[z] ,{\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z],g[z]},Expand],
-MemberQ[qlist,spt] && spt>0,     derivsubs={\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "1", ")"}],
-Derivative],
-MultilineFunction->None]\)[s]->-1/2/z*\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "1", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]};
+Collect[diffeqs /. derivsubs/. s->z^2+spt /. g[z^2+spt]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
+MemberQ[qlist,spt] && spt>0,     derivsubs={Derivative[1][g][s]->-1/2/z*Derivative[1][g][z]};
 For[j=1,j<=nderiv,j++,
 newderiv=D[g[s],{s,j+1}]->Expand[-1/2/z*D[derivsubs[[j,2]],z]];
 derivsubs=Append[derivsubs,newderiv];
 ];
-Collect[diffeqs /. derivsubs/. s->spt-z^2 /. g[spt-z^2]->g[z] ,{\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z],g[z]},Expand]  
+Collect[diffeqs /. derivsubs/. s->spt-z^2 /. g[spt-z^2]->g[z] ,{Derivative[_][g][z],g[z]},Expand]  
 ]; 
 diffeqz
 ]
@@ -466,26 +353,10 @@ Q2=If[q==0,{},Table[Sum[list[[j]],{j,1+(q+1)*r+q*i,(q+1)*r+q*(i+1)}],{i,0,nsplit
 Options[SplitDiffEq]={"Method"->"Optimal split"};
 
 SplitDiffEq[diffeq_,g_,s_,nsplit_,OptionsPattern[]]:=Module[{terms={},nterms,order,Z,newnsplit,q,r,n,i,j,k,T0,T1,T,Q,Q0,Q1,Q2},
-order=Exponent[diffeq /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[s]->Z^n,Z]; (* order of the differential equation *)
-T0={diffeq /. g[s]->0 /.  \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[s]->0};
+order=Exponent[diffeq /. Derivative[n_][g][s]->Z^n,Z]; (* order of the differential equation *)
+T0={diffeq /. g[s]->0 /.  Derivative[n_][g][s]->0};
 T1={Coefficient[diffeq,g[s],1]*g[s]};
-T=Table[Coefficient[diffeq,\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "k", ")"}],
-Derivative],
-MultilineFunction->None]\)[s],1]*\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "k", ")"}],
-Derivative],
-MultilineFunction->None]\)[s],{k,1,order}];
+T=Table[Coefficient[diffeq,Derivative[k][g][s],1]*Derivative[k][g][s],{k,1,order}];
 T=Join[T0,T1,T];
 Which[
 OptionValue["Method"]=="One by one",          Table[T[[j]],{j,1,Length[T]}],
@@ -493,7 +364,7 @@ OptionValue["Method"]=="Reduced split",   ReducedSplit[T,nsplit] ,
 OptionValue["Method"]=="Optimal split",   OptimalSplit[T,nsplit] ]  ]
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Produce coefficient relations (find truncated series solutions)*)
 
 
@@ -512,11 +383,7 @@ GetAnsatzParameters[diffeq_,g_,z_,a_,teststart_,testnlogs_,nc_,opts___Rule]:=Get
 (* ::Input::Initialization:: *)
 GetAnsatzParametersInternal[diffeq_,g_,z_,a_,teststart_,testnlogs_,nc_,opts___Rule]:=Module[{ncoeffs,ansatz,i,j,ord,n,r,deq,ansatzindeq,fv,lowestpower,coeffs,M,R,LogTerm,freepos,freecoeffs,coeffsubz,nlogs=testnlogs,start=teststart},
 
-ord=Max[Cases[diffeq,\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "n_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->n,Infinity],0];
+ord=Max[Cases[diffeq,Derivative[n_][g][z]->n,Infinity],0];
 
 If[("Regular Point"/.{opts}/.Options[GetAnsatzParameters])===True,
 Return[{0,0,Table[a[0,i],{i,0,ord-1}]}];
@@ -526,11 +393,7 @@ Return[{0,0,Table[a[0,i],{i,0,ord-1}]}];
 ncoeffs=nc+100;
 ansatz =Collect[ Sum[ a[i,j]*z^j*Log[z]^i,{j,teststart,ncoeffs},{i,0,testnlogs}],{Log[z],a[_,_]},Expand];
 
-deq=Collect[diffeq,{g[_],\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]},Expand];
+deq=Collect[diffeq,{g[_],Derivative[_][g][z]},Expand];
 deq=deq/.(Power[z,r_]/;r>ord+ncoeffs-teststart)->0;
 
 
@@ -755,11 +618,7 @@ ansatz=Sum[ a[i,j]*z^j*Log[z]^i,{j,start,ncoeffs},{i,0,nlogs}];
 ansatz=ansatz/.a[A_,B_]:>a[A]^(B-start+2);
 
 
-deq=Collect[diffeq,{g[_],\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]},Expand];
+deq=Collect[diffeq,{g[_],Derivative[_][g][z]},Expand];
 deq=deq/.(Power[z,r_]/;r>ncoeffs-start)->0;
 
 ansatz=Collect[ansatz,{Log[z],z},Expand];
@@ -998,7 +857,6 @@ Map[fu,f]
 ]
 
 
-(* ::Code::Initialization:: *)
 GenerateRelationFromRecC[{rec_,F_[n_],h_:dummy},{initialSubstIn_,a_},no_,IsInhom_,DigitPrec_:Infinity,maxKernels_Integer]:=
 Module[{result,check,maxNo,initialSubst,nu,extraValue,testvals,randomsubst,vars},
 
@@ -1110,11 +968,7 @@ res]
 MakeIntegerDE[diffeqIn_,g_[z_]]:=
 Module[{diffeq,c},
 diffeq=Apply[List,diffeqIn];
-c=diffeq/.{g[_]->1,\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->1};
+c=diffeq/.{g[_]->1,Derivative[_][g][z]->1};
 diffeq=diffeq/c;
 c=Map[Apply[List,#]&,c];
 c=c*Apply[PolynomialLCM,Denominator[Flatten[c]]];
@@ -1326,7 +1180,7 @@ Clear[ReconstructRationalNumber]
 ReconstructRationalNumber[n_,p_]:=If[n===0,0,(((#[[2,2]]/#[[1,2,2]])&)[Internal`HGCD[p,Mod[n,p]]]*2)/2];
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Compute general solutions (fast) using the underlying recurrence and initial values*)
 
 
@@ -1643,7 +1497,7 @@ substLogN[[k,2]]=N[substLogN[[k,2]],precision]/.A[b_]:>A[Round[b]],
 {substLogN,substLogPart,inhomExpr} ]
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Match points*)
 
 
@@ -1787,16 +1641,15 @@ sol=sol[[1]]/.A_[B_]:>A[Round[B]];
 (* ::Input::Initialization:: *)
 Options[GetIniPoints]={"Drop"->0};
 
-GetIniPoints[lpoint_,rpoint_,nstartpts_,OptionsPattern[]]:=Module[{T},
+GetIniPoints[lpoint_,rpoint_,nstartpts_,OptionsPattern[]]:=Module[{T,k},
 T=Table[lpoint+(rpoint-lpoint)/(nstartpts-1)*(k-1),{k,1,nstartpts}];
 Drop[T,OptionValue["Drop"]]  ]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*End package*)
 
 
 (* ::Input::Initialization:: *)
 End[]
-(* Protect@@Names["CoeffSubsFiles5`*"]; *)
 EndPackage[]
