@@ -1,5 +1,13 @@
 (* ::Package:: *)
 
+(* ::Text:: *)
+(*Copyright (C) 2026  Jakob Obrovsky*)
+(**)
+(*This file is part of HolonomicContinuation.*)
+(**)
+(*HolonomicContinuation is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License (GPL) as published by the Free Software Foundation; either version 3 of the License, or  (at your option) any later version.  See https://www.gnu.org/licenses/*)
+
+
 (* ::Input::Initialization:: *)
 BeginPackage["RecToValuesFLINT`"]
 ClearAll@@Names["RecToValuesFLINT`*"];

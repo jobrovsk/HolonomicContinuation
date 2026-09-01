@@ -1,11 +1,19 @@
 (* ::Package:: *)
 
+(* ::Text:: *)
+(*Copyright (C) 2026  Abilio De Freitas, Carsten Schneider*)
+(**)
+(*This file is part of HolonomicContinuation.*)
+(**)
+(*HolonomicContinuation is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License (GPL) as published by the Free Software Foundation; either version 3 of the License, or  (at your option) any later version.  See https://www.gnu.org/licenses/*)
+
+
 (* ::Section:: *)
 (*Start package*)
 
 
 (* ::Input::Initialization:: *)
-HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.1 (08/31/2026)";
+HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.1 (09/01/2026)";
 If[TrueQ[$Notebooks],CellPrint[Cell[BoxData[HolonomicContinuationVersion],"Print",FontColor->RGBColor[0,0,0],CellFrame->0.5,Background->RGBColor[0.796887,0.789075,0.871107]]],
 Print[HolonomicContinuationVersion]];
 
@@ -261,7 +269,6 @@ True,Print["The indicial equation has solutions outside of the set of integers a
 indicial ]
 
 
-(* ::Code::Initialization:: *)
 GetDEQInf[deIn_, {s_,spt_}, g_,z_]:=
 Module[{de=deIn,derivsubs,ord,sign,inhompart,exp,j},
 ord=Max[Cases[{de},Derivative[A_][_][_]->A,Infinity],0];
@@ -1178,7 +1185,7 @@ Clear[ReconstructRationalNumber]
 ReconstructRationalNumber[n_,p_]:=If[n===0,0,(((#[[2,2]]/#[[1,2,2]])&)[Internal`HGCD[p,Mod[n,p]]]*2)/2];
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Compute general solutions (fast) using the underlying recurrence and initial values*)
 
 
