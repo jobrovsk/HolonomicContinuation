@@ -4,7 +4,7 @@ Website: [risc.jku.at/sw/holonomiccontinuation](https://risc.jku.at/sw/holonomic
 
 ## Overview
 
-HolonomicContinuation is a Mathematica package for analytical continuation of holonomic functions. Given a differential equation and initial values at some point, it can compute a (logarithmically modulated) truncated series expansion at another point. Certain functions also have an optional C backend based on FLINT [flintlib.org](https://flintlib.org) that is specifically designed to efficiently deal with exceptionally large differential equations. 
+HolonomicContinuation is a Mathematica package for analytic continuation of holonomic functions. Given a holonomic function defined by a differential equation and initial values at a specific point, the program can compute a (logarithmically modulated) truncated series expansion of this function at another point. It is specifically designed to efficiently deal with exceptionally large differential equations. Certain functions also have an optional C backend based on FLINT [flintlib.org](https://flintlib.org). 
 
 ## Requirements
 

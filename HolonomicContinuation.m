@@ -204,6 +204,9 @@ GetBestMatchSetUp2::usage=""*)
 Begin["`Private`"]
 
 
+startTimeUsed=TimeUsed[];
+
+
 (* ::Section:: *)
 (*Transform to DEs at different points*)
 
@@ -256,9 +259,6 @@ sol!={{}} && integerq,Print["The indicial equation has only integer solutions."]
 sol!={{}} && halfintegerq,Print["The indicial equation has integer and half-integer solutions (only)."],
 True,Print["The indicial equation has solutions outside of the set of integers and half-integers."]];
 indicial ]
-
-
-InputForm[Derivative[j_][g]]
 
 
 (* ::Code::Initialization:: *)
@@ -364,7 +364,7 @@ OptionValue["Method"]=="Reduced split",   ReducedSplit[T,nsplit] ,
 OptionValue["Method"]=="Optimal split",   OptimalSplit[T,nsplit] ]  ]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*Produce coefficient relations (find truncated series solutions)*)
 
 
@@ -596,10 +596,10 @@ degrees
 Options[GetCoeffSubs]={"Number of coeffs to get parameters"->50};
 
 GetCoeffSubs[diffeqIn_,g_,z_,a_,teststart_,testnlogs_,nc_,OptionsPattern[]]:=Module[{diffeq,c,start,nlogs,ncoeffs,ansatz,i,j,ord,n,r,deq,ansatzindeq,fv,lowestpower,coeffs,shift,M,subst,vec,posL,posR,R,LogTerm,freepos,freecoeffs,coeffsubz,step,kernelL,ordD,const,pos,posZ,posExtra,MConst,varD,posVar,posVar2,varLS,blockSize,varCommon},
-
+startTimeUsed=TimeUsed[];
 
 If[True||Global`PrintStep===True,
-Print[{"Step1: Analyze the system",TimeUsed[],MaxMemoryUsed[]}];
+Print[{"Step1: Analyze the system",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 diffeq=MakeIntegerDE[diffeqIn,g[z]];
@@ -610,7 +610,7 @@ ord=Max[Cases[diffeq,Derivative[n_][g][z]->n,Infinity],0]; (* Order of the diffe
 ncoeffs=nc+If[nlogs>0||start<0,ord+Max[-start,0],0]+5; 
 
 If[True||Global`PrintStep===True,
-Print[{"Step2: Set up the matrix",TimeUsed[],MaxMemoryUsed[]}];
+Print[{"Step2: Set up the matrix",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
 ];
 kernelL=Kernels[];
 
@@ -657,7 +657,7 @@ MultilineFunction->None]\)[z]:>(ansatz[[i,k+1]]/.(Power[z,r_]/;r>ncoeffs-start+k
 ansatzindeq=Map[Apply[List,#]&,ansatzindeq];
 
 
-If[Global`PrintStep===True,Print[{T0,MaxMemoryUsed[],TimeUsed[]}];
+If[Global`PrintStep===True,Print[{T0,MaxMemoryUsed[],TimeUsed[]-startTimeUsed}];
 ];
 
 If[Global`MatrixGenNoKernels===True||System`Parallel`$SubKernel===True||Length[kernelL]===0||nlogs===0,
@@ -674,12 +674,12 @@ const=1;
 ExpandV=0;
 Do[
 If[Global`PrintStep===True,
-Print[{i,k,TimeUsed[]}];
+Print[{i,k,TimeUsed[]-startTimeUsed}];
 ];
 exp=Table[0,{ncoeffs-ordD+10+1},{ncoeffs-start+20+1}];
 Do[
 If[Global`PrintStep===True,
-Print[{i,k,j,TimeUsed[]}];
+Print[{i,k,j,TimeUsed[]-startTimeUsed}];
 ];
 exp=exp+CoefficientList[CoefficientList[ansatzindeq[[i,j]]/.Delete[varLSubst,k],varLSubst[[k,1]],ncoeffs-ordD+10+1],z,ncoeffs-start+20+1],
 {j,Length[ansatzindeq[[i]]]}
@@ -715,7 +715,7 @@ ExpandV=0;
 Do[
 exp=Table[0,{ncoeffs-ordD+10+1},{ncoeffs-start+20+1}];
 Do[
-If[False&&Global`PrintStep===True,Print[{k,j,TimeUsed[]}];
+If[False&&Global`PrintStep===True,Print[{k,j,TimeUsed[]-startTimeUsed}];
 ];
 exp=exp+CoefficientList[CoefficientList[#[[j]]/.Delete[varLSubst,k],varLSubst[[k,1]],ncoeffs-ordD+10+1],z,ncoeffs-start+20+1],
 {j,Length[#]}
@@ -730,7 +730,7 @@ ExpandV),Clear[ExpandV];Clear[partL];ClearSystemCache[];]&,
 ansatzindeq
 ];
 
-If[Global`PrintStep===True,Print[{T0a,MaxMemoryUsed[],TimeUsed[]}];
+If[Global`PrintStep===True,Print[{T0a,MaxMemoryUsed[],TimeUsed[]-startTimeUsed}];
 ];
 
 ClearSystemCache[];
@@ -741,13 +741,13 @@ If[ordD<0||const=!=1,
 fv=Map[If[Head[#]===Plus,Apply[Plus,Apply[List,#]z^(ordD)/const],# z^(ordD)/const]&,fv];
 ];
 
-If[Global`PrintStep===True,Print[{T0b,MaxMemoryUsed[],TimeUsed[]}];
+If[Global`PrintStep===True,Print[{T0b,MaxMemoryUsed[],TimeUsed[]-startTimeUsed}];
 ];
 
 
 fv=Sum[fv[[i+1]]Log[z]^i,{i,0,Length[ansatzindeq]-1}];
 
-If[Global`PrintStep===True,Print[{T0c,MaxMemoryUsed[],TimeUsed[]}];
+If[Global`PrintStep===True,Print[{T0c,MaxMemoryUsed[],TimeUsed[]-startTimeUsed}];
 ];
 
 
@@ -789,19 +789,19 @@ M=PrepareRows/@M;
 
 M=ReduceMatrix[M,ord];
 If[True||Global`PrintStep===True,
-Print[{"Step3: solve the system",TimeUsed[],MaxMemoryUsed[]}];
+Print[{"Step3: solve the system",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 coeffsubz=MyNullSpaceQ[M];
 
 If[True||Global`PrintStep===True,
-Print[{"Step4: extract the relations ",TimeUsed[],MaxMemoryUsed[]}];
+Print[{"Step4: extract the relations ",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 coeffsubz=FromNSToSubst[coeffsubz,coeffs,posZ];
 
 If[True||Global`PrintStep===True,
-Print[{"Step5: prepare output ",TimeUsed[],MaxMemoryUsed[]}];
+Print[{"Step5: prepare output ",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 
@@ -1118,7 +1118,7 @@ pprod=p*pprod;
 ];
 ];
 ];
-Print["Number of primes: ",k," (used time: ",TimeUsed[],", max used memory: ",MaxMemoryUsed[],", `prime` digits: ",Apply[Plus,DigitCount[p]],", CRA digits: ",Apply[Plus,DigitCount[pprod]],")"];
+Print["Number of primes: ",k," (total used time: ",TimeUsed[]-startTimeUsed,", max used memory: ",MaxMemoryUsed[],", `prime` digits: ",Apply[Plus,DigitCount[p]],", CRA digits: ",Apply[Plus,DigitCount[pprod]],")"];
 If[j<Length[ML],
 j=j+1;
 k=k+1,
@@ -1141,10 +1141,8 @@ Clear[MyNullSpaceQStandard];
 
 
 (* ::Input::Initialization:: *)
-MyNullSpaceQStandard[MIn_]:=Module[{M,solold,p,t=True,Mp,sol,r,pprod,i,k},
-k=0;
+MyNullSpaceQStandard[MIn_]:=Module[{M,solold={},p,t=True,Mp,sol,r,pprod,i,k=0},
 M=PrepareRows/@MIn;
-solold={};
 p=NextPrime[Developer`$MaxMachineInteger^19];
 While[t,
 Mp=Mod[M,p];
@@ -1157,7 +1155,7 @@ If[Length[sol]>0,t=False;,sol=NullSpace[Mp,Modulus->p];
 If[sol==={},t=False;,If[Length[sol]<Length[solold]||solold==={},solold=sol;
 pprod=p;,If[Length[sol]>Length[solold],Print["Unlucky prime!"];,(*solold=Apply[ChineseRemainder[{##},{pprod,p}]&,Transpose[{solold,sol},{3,1,2}],{2}];*)solold=Map[ChineseRemainder[##,{pprod,p}]&,Transpose[{solold,sol},{3,1,2}],{2}];
 pprod=p*pprod;];];];];
-Print["Number of primes: ",k++," (used time: ",TimeUsed[],", prime digits: ",Apply[Plus,DigitCount[p]],", CRA digits: ",Apply[Plus,DigitCount[pprod]],")"];
+Print["Number of primes: ",k++," (total used time: ",TimeUsed[]-startTimeUsed,", prime digits: ",Apply[Plus,DigitCount[p]],", CRA digits: ",Apply[Plus,DigitCount[pprod]],")"];
 p=NextPrime[p,-1];];
 sol];
 
