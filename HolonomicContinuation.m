@@ -1,7 +1,7 @@
 (* ::Package:: *)
 
 (* ::Text:: *)
-(*Copyright (C) 2026  Abilio De Freitas, Carsten Schneider*)
+(*Copyright (C) 2026  Abilio de Freitas, Carsten Schneider*)
 (**)
 (*This file is part of HolonomicContinuation.*)
 (**)
@@ -156,7 +156,7 @@ The input variables are
 'workingprecision': self-explanatory.
 'wmp': used to reduce the working precision in case it's necessary ('NSolve' is used and it may demand it).
 
-The output is a list. The first item in the list is the value of the extra coefficient calculated with the matching conditions, which we can then compare with the known value. The second item in the list is the solution to all free coefficients found using the matching conditions."
+The output is a list. The first item in the list is the size of the extra coefficient calculated with the matching conditions, which we can then compare with the known value. The second item in the list is the solution to all free coefficients found using the matching conditions."
 
 
 
@@ -182,17 +182,6 @@ BuildMatchExpansions::usage="BuildMatchExpansions[FF, i, z, s, {smA, startA, ncA
 
 In order to use this function, the list of coefficient substitutions must be available for both expansions, as well as the numerical solution of the free coefficients of the first expansion, since 'BuildMatchExpansions' looks for this information in order to build the expansions, based on the values of 'smA' and 'smB'."
 
-
-
-
-(* ::Input::Initialization:: *)
-TestCoeffInfo::usage="TestCoeffInfo[coeff] determines the power in the expansion variable and the power of the log associated to the coefficient 'coeff'. For example,
-
-TestCoeffInfo[a2[-3]]
-
-will give
-
-{a2[-3],-3,2}"
 
 
 
@@ -595,7 +584,7 @@ degrees
 ]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Compute general solutions (slow) for initial values*)
 
 
@@ -1185,7 +1174,7 @@ Clear[ReconstructRationalNumber]
 ReconstructRationalNumber[n_,p_]:=If[n===0,0,(((#[[2,2]]/#[[1,2,2]])&)[Internal`HGCD[p,Mod[n,p]]]*2)/2];
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Compute general solutions (fast) using the underlying recurrence and initial values*)
 
 
@@ -1502,7 +1491,7 @@ substLogN[[k,2]]=N[substLogN[[k,2]],precision]/.A[b_]:>A[Round[b]],
 {substLogN,substLogPart,inhomExpr} ]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*Match points*)
 
 
@@ -1574,8 +1563,7 @@ ToStringForm[expansion,a]
 
 (* ::Input::Initialization:: *)
 PrepareHForm[fIn_,z_]:=
-Module[{ord,f,A},
-f=fIn;
+Module[{ord,A,f=fIn},
 ord=Append[Union[Cases[{f},(Power[z,A_Integer]/;A<0)->A,Infinity]],0]//Min;
 If[ord<0,
 f=If[Head[f]===Plus,Apply[Plus,Apply[List,f]z^(-ord)],f z^(-ord)];
@@ -1592,7 +1580,7 @@ funcA=Collect[funcA,Log[_],PrepareHForm[#,z]&];
 funcA=funcA/. ruleA;
 
 funcB=(BuildExpansion[z,s,a,startB,ncB,nlogsB] /. coeffsubsB)+coeff*z^j*Log[z]^k;
-varA=Prepend[Table[ToExpression[ToString[a]~~ToString[kk]],{kk,0,nlogsB}],Log[_]];
+varA=Append[Table[ToExpression[ToString[a]~~ToString[kk]],{kk,0,nlogsB}],Log[_]];
 funcB=Collect[funcB,varA,PrepareHForm[#,z]&];
 funcB=funcB/. ruleB;
 (* Output functions *)
@@ -1614,31 +1602,22 @@ Fold[(val #1+#2)&,0,plist]
 ];
 
 
-(* ::Input::Initialization:: *)
 MatchExpansions[func1_,func2_,s_,freecoeffs_,coeff_,{point_,delta_},workingprecision_,mwp_]:=Module[{slist,func1vals,lhs,eqsys,sol,i,j,k,l},
-slist=Table[point+(j-1)*delta,{j,1,Length[freecoeffs]}];
-
-RPrint[M1];
+slist=Table[point+(j-1)*delta,{j,Length[freecoeffs]}];
 
 func1vals=Map[(SetPrecision[func1/.s->#/.HornerFormH[A_,B_]:> EvHorner[A,B,workingprecision+200],workingprecision]//Expand)&,slist];
-
-RPrint[M2];
-
-(*Changed line!*)
 lhs=Map[(SetPrecision[func2 /. s->#/.HornerFormH[A_,B_]:> EvHorner[A,B,workingprecision+200],workingprecision+200]//Expand)&,slist] /.a_[r_]:>a[Round[r]];
 
-RPrint[M3];
-
 eqsys=MapThread[Equal,{lhs,func1vals}];
+
 eqsys=eqsys /. a_[r_]:>a[Round[r]];
 
-(*Global`NS=NSolveX[eqsys,Join[freecoeffs],workingprecision-mwp];*)
-
 sol=NSolve[eqsys,Join[freecoeffs],workingprecision-mwp];
+
 If[sol==={},
 {"Failed",{}},
 sol=sol[[1]]/.A_[B_]:>A[Round[B]];
-{N[Abs[coeff /. sol],10], sol}
+{coeff /. sol, sol}
 ]
 ]
 

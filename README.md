@@ -26,7 +26,7 @@ See the Mathematica notebook RunningExample.nb and the usage-messages of the ind
 
 ## Authors
 
-Abilio De Freitas
+Abilio de Freitas
 
 Jakob Obrovsky (jakob.obrovsky@risc.jku.at)
 
