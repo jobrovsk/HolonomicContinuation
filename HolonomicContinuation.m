@@ -13,9 +13,9 @@
 
 
 (* ::Input::Initialization:: *)
-HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.1 (09/01/2026)";
-If[TrueQ[$Notebooks],CellPrint[Cell[BoxData[HolonomicContinuationVersion],"Print",FontColor->RGBColor[0,0,0],CellFrame->0.5,Background->RGBColor[0.796887,0.789075,0.871107]]],
-Print[HolonomicContinuationVersion]];
+$HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.2 (09/07/2026)";
+If[TrueQ[$Notebooks],CellPrint[Cell[BoxData[$HolonomicContinuationVersion],"Print",FontColor->RGBColor[0,0,0],CellFrame->0.5,Background->RGBColor[0.796887,0.789075,0.871107]]],
+Print[$HolonomicContinuationVersion]];
 
 
 Get[FileNameJoin[{DirectoryName[$InputFileName],"RecToValuesFLINT_V3.3.m"}]];
@@ -107,7 +107,7 @@ The input variables are
 
 If in Mathematica several kernels are launched, the underlying solver will be executed in parallel mode.
 
-Options: \"Number of coeffs to get parameters\" sets the number of coefficients used to determine the ansatz parameters. Default: 50."
+Options: \"Number of coeffs to get parameters\" sets the number of coefficients used to determine the ansatz parameters. Default: 50.";
 
 
 (* ::Input::Initialization:: *)
@@ -139,7 +139,11 @@ NumberOfInitialValues::usage="NumberOfInitialValues[receq,g[n]] determines the n
 
 
 (* ::Input::Initialization:: *)
-UseFlintByC::usage="If this option is set to True, the package RecToValuesFLINT is used in addition. So it has to be loaded into the system beforehand and the underlying code has to be compliled accordingly."
+UseFlintByC::usage="If this option is set to True, the package RecToValuesFLINT is used in addition. So it has to be loaded into the system beforehand and the underlying code has to be compliled accordingly.";
+
+
+BackendC::usage="Which of the availbalbe C-backend should be used. Currently available are \"rec_to_val_V1\" and \"rec_to_val_V2\". The first,\"rec_to_val_V1\", needs only very little memory. 
+The second, \"rec_to_val_V2\", is somewhat faster (up to 2 times) but needs more memory. This option is ignored if UseFlintByC->False.";
 
 
 (* ::Input::Initialization:: *)
@@ -164,8 +168,6 @@ The output is a list. The first item in the list is the size of the extra coeffi
 GetIniPoints::usage="GetIniPoints[lpoint, rpoint, nstartpts] produces a list of 'nstartpts' equally spaced values between 'lpoint' and 'rpoint'. The option \"Drop\" allows to drop some terms from the list. The default is \"Drop\"\[Rule]0 (nothing is dropped)."
 
 
-
-
 (* ::Input::Initialization:: *)
 TestCoeffInfo::usage="TestCoeffInfo[coeff] determines the power in the expansion variable and the power of the log associated to the coefficient 'coeff'. For example,
 
@@ -186,25 +188,13 @@ In order to use this function, the list of coefficient substitutions must be ava
 
 
 (* ::Input::Initialization:: *)
-(*FindBestInterval::usage=""
-
-RefineMatchInterval::usage=""
-
-GetBestPointMatch::usage=""
-
-GetBestMatchSetUp::usage=""
-
-GetBestMatchSetUp2::usage=""*)
-
-
-(* ::Input::Initialization:: *)
 Begin["`Private`"]
 
 
-startTimeUsed=TimeUsed[];
+$startTimeUsed=TimeUsed[];
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Transform to DEs at different points*)
 
 
@@ -360,7 +350,7 @@ OptionValue["Method"]=="Reduced split",   ReducedSplit[T,nsplit] ,
 OptionValue["Method"]=="Optimal split",   OptimalSplit[T,nsplit] ]  ]
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Produce coefficient relations (find truncated series solutions)*)
 
 
@@ -592,10 +582,10 @@ degrees
 Options[GetCoeffSubs]={"Number of coeffs to get parameters"->50};
 
 GetCoeffSubs[diffeqIn_,g_,z_,a_,teststart_,testnlogs_,nc_,OptionsPattern[]]:=Module[{diffeq,c,start,nlogs,ncoeffs,ansatz,i,j,ord,n,r,deq,ansatzindeq,fv,lowestpower,coeffs,shift,M,subst,vec,posL,posR,R,LogTerm,freepos,freecoeffs,coeffsubz,step,kernelL,ordD,const,pos,posZ,posExtra,MConst,varD,posVar,posVar2,varLS,blockSize,varCommon},
-startTimeUsed=TimeUsed[];
+$startTimeUsed=TimeUsed[];
 
 If[True||Global`PrintStep===True,
-Print[{"Step1: Analyze the system",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
+Print[{"Step1: Analyze the system",TimeUsed[]-$startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 diffeq=MakeIntegerDE[diffeqIn,g[z]];
@@ -606,7 +596,7 @@ ord=Max[Cases[diffeq,Derivative[n_][g][z]->n,Infinity],0]; (* Order of the diffe
 ncoeffs=nc+If[nlogs>0||start<0,ord+Max[-start,0],0]+5; 
 
 If[True||Global`PrintStep===True,
-Print[{"Step2: Set up the matrix",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
+Print[{"Step2: Set up the matrix",TimeUsed[]-$startTimeUsed,MaxMemoryUsed[]}];
 ];
 kernelL=Kernels[];
 
@@ -653,7 +643,7 @@ MultilineFunction->None]\)[z]:>(ansatz[[i,k+1]]/.(Power[z,r_]/;r>ncoeffs-start+k
 ansatzindeq=Map[Apply[List,#]&,ansatzindeq];
 
 
-If[Global`PrintStep===True,Print[{T0,MaxMemoryUsed[],TimeUsed[]-startTimeUsed}];
+If[Global`PrintStep===True,Print[{T0,MaxMemoryUsed[],TimeUsed[]-$startTimeUsed}];
 ];
 
 If[Global`MatrixGenNoKernels===True||System`Parallel`$SubKernel===True||Length[kernelL]===0||nlogs===0,
@@ -670,12 +660,12 @@ const=1;
 ExpandV=0;
 Do[
 If[Global`PrintStep===True,
-Print[{i,k,TimeUsed[]-startTimeUsed}];
+Print[{i,k,TimeUsed[]-$startTimeUsed}];
 ];
 exp=Table[0,{ncoeffs-ordD+10+1},{ncoeffs-start+20+1}];
 Do[
 If[Global`PrintStep===True,
-Print[{i,k,j,TimeUsed[]-startTimeUsed}];
+Print[{i,k,j,TimeUsed[]-$startTimeUsed}];
 ];
 exp=exp+CoefficientList[CoefficientList[ansatzindeq[[i,j]]/.Delete[varLSubst,k],varLSubst[[k,1]],ncoeffs-ordD+10+1],z,ncoeffs-start+20+1],
 {j,Length[ansatzindeq[[i]]]}
@@ -711,7 +701,7 @@ ExpandV=0;
 Do[
 exp=Table[0,{ncoeffs-ordD+10+1},{ncoeffs-start+20+1}];
 Do[
-If[False&&Global`PrintStep===True,Print[{k,j,TimeUsed[]-startTimeUsed}];
+If[False&&Global`PrintStep===True,Print[{k,j,TimeUsed[]-$startTimeUsed}];
 ];
 exp=exp+CoefficientList[CoefficientList[#[[j]]/.Delete[varLSubst,k],varLSubst[[k,1]],ncoeffs-ordD+10+1],z,ncoeffs-start+20+1],
 {j,Length[#]}
@@ -726,7 +716,7 @@ ExpandV),Clear[ExpandV];Clear[partL];ClearSystemCache[];]&,
 ansatzindeq
 ];
 
-If[Global`PrintStep===True,Print[{T0a,MaxMemoryUsed[],TimeUsed[]-startTimeUsed}];
+If[Global`PrintStep===True,Print[{T0a,MaxMemoryUsed[],TimeUsed[]-$startTimeUsed}];
 ];
 
 ClearSystemCache[];
@@ -737,13 +727,13 @@ If[ordD<0||const=!=1,
 fv=Map[If[Head[#]===Plus,Apply[Plus,Apply[List,#]z^(ordD)/const],# z^(ordD)/const]&,fv];
 ];
 
-If[Global`PrintStep===True,Print[{T0b,MaxMemoryUsed[],TimeUsed[]-startTimeUsed}];
+If[Global`PrintStep===True,Print[{T0b,MaxMemoryUsed[],TimeUsed[]-$startTimeUsed}];
 ];
 
 
 fv=Sum[fv[[i+1]]Log[z]^i,{i,0,Length[ansatzindeq]-1}];
 
-If[Global`PrintStep===True,Print[{T0c,MaxMemoryUsed[],TimeUsed[]-startTimeUsed}];
+If[Global`PrintStep===True,Print[{T0c,MaxMemoryUsed[],TimeUsed[]-$startTimeUsed}];
 ];
 
 
@@ -785,19 +775,19 @@ M=PrepareRows/@M;
 
 M=ReduceMatrix[M,ord];
 If[True||Global`PrintStep===True,
-Print[{"Step3: solve the system",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
+Print[{"Step3: solve the system",TimeUsed[]-$startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 coeffsubz=MyNullSpaceQ[M];
 
 If[True||Global`PrintStep===True,
-Print[{"Step4: extract the relations ",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
+Print[{"Step4: extract the relations ",TimeUsed[]-$startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 coeffsubz=FromNSToSubst[coeffsubz,coeffs,posZ];
 
 If[True||Global`PrintStep===True,
-Print[{"Step5: prepare output ",TimeUsed[]-startTimeUsed,MaxMemoryUsed[]}];
+Print[{"Step5: prepare output ",TimeUsed[]-$startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 
@@ -853,7 +843,8 @@ Map[fu,f]
 ]
 
 
-GenerateRelationFromRecC[{rec_,F_[n_],h_:dummy},{initialSubstIn_,a_},no_,IsInhom_,DigitPrec_:Infinity,maxKernels_Integer]:=
+Options[GenerateRelationFromRecC]={BackendC->"rec_to_val_V2"};
+GenerateRelationFromRecC[{rec_,F_[n_],h_:dummy},{initialSubstIn_,a_},no_,IsInhom_,DigitPrec_,maxKernels_Integer,OptionsPattern[]]:=
 Module[{result,check,maxNo,initialSubst,nu,extraValue,testvals,randomsubst,vars},
 
 nu=NumberOfInitialValues[rec,F[n]];
@@ -871,7 +862,7 @@ result=RecToValuesFLINT`RecToValuesFLINT[{rec,F[n]},{initialSubst,a},no,DigitPre
 	"NumberOfThreads"->maxKernels,
 	"Inhomogeneous"->IsInhom,
 	"WriteOutputToFile"->False,
-"Backend"->"rec_to_val_V2"
+"Backend"->OptionValue[BackendC]
 ];
 testvals=Table[a[k],{k,maxNo-extraValue,maxNo}];
 vars=Union[Variables[Values[initialSubst]],Variables[Values[result]]];
@@ -1114,7 +1105,7 @@ pprod=p*pprod;
 ];
 ];
 ];
-Print["Number of primes: ",k," (total used time: ",TimeUsed[]-startTimeUsed,", max used memory: ",MaxMemoryUsed[],", `prime` digits: ",Apply[Plus,DigitCount[p]],", CRA digits: ",Apply[Plus,DigitCount[pprod]],")"];
+Print["Number of primes: ",k," (total used time: ",TimeUsed[]-$startTimeUsed,", max used memory: ",MaxMemoryUsed[],", `prime` digits: ",Apply[Plus,DigitCount[p]],", CRA digits: ",Apply[Plus,DigitCount[pprod]],")"];
 If[j<Length[ML],
 j=j+1;
 k=k+1,
@@ -1135,7 +1126,6 @@ sol
 Clear[MyNullSpaceQStandard];
 
 
-
 (* ::Input::Initialization:: *)
 MyNullSpaceQStandard[MIn_]:=Module[{M,solold={},p,t=True,Mp,sol,r,pprod,i,k=0},
 M=PrepareRows/@MIn;
@@ -1151,7 +1141,7 @@ If[Length[sol]>0,t=False;,sol=NullSpace[Mp,Modulus->p];
 If[sol==={},t=False;,If[Length[sol]<Length[solold]||solold==={},solold=sol;
 pprod=p;,If[Length[sol]>Length[solold],Print["Unlucky prime!"];,(*solold=Apply[ChineseRemainder[{##},{pprod,p}]&,Transpose[{solold,sol},{3,1,2}],{2}];*)solold=Map[ChineseRemainder[##,{pprod,p}]&,Transpose[{solold,sol},{3,1,2}],{2}];
 pprod=p*pprod;];];];];
-Print["Number of primes: ",k++," (total used time: ",TimeUsed[]-startTimeUsed,", prime digits: ",Apply[Plus,DigitCount[p]],", CRA digits: ",Apply[Plus,DigitCount[pprod]],")"];
+Print["Number of primes: ",k++," (total used time: ",TimeUsed[]-$startTimeUsed,", prime digits: ",Apply[Plus,DigitCount[p]],", CRA digits: ",Apply[Plus,DigitCount[pprod]],")"];
 p=NextPrime[p,-1];];
 sol];
 
@@ -1179,12 +1169,12 @@ ReconstructRationalNumber[n_,p_]:=If[n===0,0,(((#[[2,2]]/#[[1,2,2]])&)[Internal`
 
 
 (* ::Input::Initialization:: *)
-Options[GetCoeffSubsFast]={UseFlintByC->False};
+Options[GetCoeffSubsFast]={UseFlintByC->False,BackendC->"rec_to_val_V2"};
 
 
 (* ::Input::Initialization:: *)
 GetCoeffSubsFast[initialSIn_,de_,inputrec_,g_,h_,z_,a_,n_,noIn_,nlogs_,start_,precision_,maxKernels_Integer:0,opts:OptionsPattern[]]:=
-Module[{initialS,no,ord,initialSN,varKnown,initialStep,recStep,resL,prec,res,aVar},
+Module[{initialS,no,ord,initialSN,varKnown,initialStep,recStep,resL,prec,res,aVar,UseCCode},
 no=noIn;
 
 initialS=Complement[Map[#[[2]]&,initialSIn]//Variables,Map[#[[1]]&,initialSIn]//Variables];
@@ -1216,8 +1206,8 @@ prec=Infinity;
 Do[
 If[k===0,prec=precision];
 If[k===nlogs,
-res=TopLogCoeffSubs[initialStep,recStep,h,g,a,n,no,k,maxKernels,prec],
-res=LogCoeffSubs[initialStep,recStep,initialS,inputrec,de,h,g,z,a,n,no,k,start,maxKernels,prec]
+res=TopLogCoeffSubs[initialStep,recStep,h,g,a,n,no,k,maxKernels,prec,UseFlintByC->UseCCode,BackendC->OptionValue[BackendC]],
+res=LogCoeffSubs[initialStep,recStep,initialS,inputrec,de,h,g,z,a,n,no,k,start,maxKernels,prec,UseFlintByC->UseCCode,BackendC->OptionValue[BackendC]]
 ];
 resL=Join[resL,res[[1]]];
 {initialStep,recStep}={res[[2]],res[[3]]},
@@ -1283,7 +1273,8 @@ Module[{hh,rec,k,i,AAA,curNum,den,ord,values={},recK,oldDen,mul,vecGCD,lIndex,tI
 
 
 (* ::Input::Initialization:: *)
-TopLogCoeffSubs[initialS_,inputrec_,h_,g_,a_,n_,no_,LogDeg_,maxKernels_,precision_]:=Module[{substLogPart,inhomExpr,inhom,ordInhom,A,initialSubst,rec,h2,i,numberKernels,optimalKernels,newKernels,time,substLogN},
+Options[TopLogCoeffSubs]={UseFlintByC->False,BackendC->"rec_to_val_V2"}
+TopLogCoeffSubs[initialS_,inputrec_,h_,g_,a_,n_,no_,LogDeg_,maxKernels_,precision_,OptionsPattern[]]:=Module[{substLogPart,inhomExpr,inhom,ordInhom,A,initialSubst,rec,h2,i,numberKernels,optimalKernels,newKernels,time,substLogN},
 
 inhomExpr=0; 
 inhom=Table[0,{no+1}]; 
@@ -1295,8 +1286,8 @@ initialSubst=Select[initialS,!FreeQ[#[[1]],A]&];
 h2[i_Integer]:=inhom[[i+1]] ;
 
 
-If[UseCCode===True,
-{time,substLogPart}=GenerateRelationFromRecC[{rec,g[n],h2},{initialSubst,A},no,False,If[LogDeg===0,precision,Infinity],maxKernels]//AbsoluteTiming,
+If[OptionValue[UseFlintByC]===True,
+{time,substLogPart}=GenerateRelationFromRecC[{rec,g[n],h2},{initialSubst,A},no,False,If[LogDeg===0,precision,Infinity],maxKernels,BackendC->OptionValue[BackendC]]//AbsoluteTiming,
 
 numberKernels=Length[Kernels[]];
 
@@ -1421,8 +1412,8 @@ result
 ]
 
 
-(* ::Input::Initialization:: *)
-LogCoeffSubs[substLogPartA_,inhomExprA_,initialS_,inputrec_,de_,h_,g_,z_,a_,n_,no_,LogDeg_,start_,maxKernels_,precision_]:=Module[{Aabove,A,orderSubst,b,ordDE,c,LogContr,LogContrD,time,ord,inhomPart,inhomExpr,inhom,h2,rec,i,ordInhom,initialSubst,numberKernels,optimalKernels,newKernels,substLogPart,substLogN},
+Options[LogCoeffSubs]={UseFlintByC->False,BackendC->"rec_to_val_V2"};
+LogCoeffSubs[substLogPartA_,inhomExprA_,initialS_,inputrec_,de_,h_,g_,z_,a_,n_,no_,LogDeg_,start_,maxKernels_,precision_,OptionsPattern[]]:=Module[{Aabove,A,orderSubst,b,ordDE,c,LogContr,LogContrD,time,ord,inhomPart,inhomExpr,inhom,h2,rec,i,ordInhom,initialSubst,numberKernels,optimalKernels,newKernels,substLogPart,substLogN},
 Aabove=ToExpression["a"~~ToString[LogDeg+1]];
 A=ToExpression[ToString[a]~~ToString[LogDeg]];
 
@@ -1465,33 +1456,32 @@ h2[i_Integer]:=inhom[[i+1+ordInhom]];
 initialSubst=Select[initialS,!FreeQ[#[[1]],A]&]; 
 Print["ByteCount in initialSubst: ",initialSubst//ByteCount];
 
-If[UseCCode===True,
-{time,substLogPart}=GenerateRelationFromRecC[{rec,g[n],h2},{initialSubst,A},no,True,If[LogDeg===0,precision,Infinity],maxKernels]//AbsoluteTiming,
-
-numberKernels=Length[Kernels[]];
-If[numberKernels<maxKernels,
-optimalKernels=Variables[Map[#[[2]]&,initialSubst]]//Length;
-If[optimalKernels>1&&optimalKernels>numberKernels,
-newKernels=Min[optimalKernels-numberKernels,maxKernels-numberKernels];
-Print["Launch ",newKernels," kernels"];
-LaunchKernels[newKernels];
-]
-];
-
-{time,substLogPart}=GenerateRelationFromRec[{rec,g[n],h2},{initialSubst,A},no,1,If[LogDeg===0,precision,Infinity]]//AbsoluteTiming;
+If[OptionValue[UseFlintByC]===True,
+	{time,substLogPart}=GenerateRelationFromRecC[{rec,g[n],h2},{initialSubst,A},no,True,If[LogDeg===0,precision,Infinity],maxKernels,BackendC->OptionValue[BackendC]]//AbsoluteTiming
+,
+	numberKernels=Length[Kernels[]];
+	If[numberKernels<maxKernels,
+	optimalKernels=Variables[Map[#[[2]]&,initialSubst]]//Length;
+	If[optimalKernels>1&&optimalKernels>numberKernels,
+	newKernels=Min[optimalKernels-numberKernels,maxKernels-numberKernels];
+	Print["Launch ",newKernels," kernels"];
+	LaunchKernels[newKernels];
+	]
+	];	
+	{time,substLogPart}=GenerateRelationFromRec[{rec,g[n],h2},{initialSubst,A},no,1,If[LogDeg===0,precision,Infinity]]//AbsoluteTiming;
 ];
 Print["Time needed to get sub-log parts: ",time];
 
 substLogN=substLogPart;
 Do[
-substLogN[[k,2]]=N[substLogN[[k,2]],precision]/.A[b_]:>A[Round[b]],
+	substLogN[[k,2]]=N[substLogN[[k,2]],precision]/.A[b_]:>A[Round[b]],
 {k,Length[substLogN]}];
 
 (* substRelationL=Join[substRelationL,substLogN] *)
 {substLogN,substLogPart,inhomExpr} ]
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*Match points*)
 
 
@@ -1630,7 +1620,7 @@ T=Table[lpoint+(rpoint-lpoint)/(nstartpts-1)*(k-1),{k,1,nstartpts}];
 Drop[T,OptionValue["Drop"]]  ]
 
 
-(* ::Section:: *)
+(* ::Section::Closed:: *)
 (*End package*)
 
 

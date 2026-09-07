@@ -13,14 +13,6 @@ BeginPackage["RecToValuesFLINT`"]
 ClearAll@@Names["RecToValuesFLINT`*"];
 
 
-DeqToRecFlint::usage=
-"DeqToRecFlint[{deq,g[z]},{a[n],p}]
-gives the recurrence for a[n] of the solutions Sum[a[n](z-p)^n,{n,-\[Infinity],\[Infinity]}] for a rational point p. The differential equation is shifted ( /.z->z-p) and the recurrence is extracted.
-The inhomogeneous part is not handled. Also, p must not be plus/minus infinity.
-The options \"Details\", \"WriteOutputToFile\", \"PathToExecutible\" \"Overwrite\" work like for the function RecToValuesFLINT.
-";
-
-
 (* ::Input::Initialization:: *)
 RecToValuesFLINT::usage="RecToValuesFLINT[{rec,g[n]},{smallestDerivative,ordD,a0},endComp,finalPrecision]
 or
@@ -221,99 +213,6 @@ If[outputPathGivenQ,
 	Return[Table[a0[j]->result[[j-startComp+1]] . variables,{j,startComp,endComp}]];
 ];
 Return[0];
-]
-
-
-DeqToRecFlint::execnotfound="Error: Executible `1` for `2` not found. Add path manually via option \"pathToExecutible\" .";
-DeqToRecFlint::optionmalformed="Error: Option[\"`1`\"] has malformed value `2`";
-DeqToRecFlint::wrongextension="Error: File `1` must have extension \".m\" or \".mx\".";
-DeqToRecFlint::filenotfound="Error: File `1` not found.";
-DeqToRecFlint::outputfileexists="Error: Output-file `1` already exists.";
-DeqToRecFlint::cerror="Error: Program `1` did not terminate normally.";
-
-DeqToRecFlint::notempty="Error: `1` is not an empty directory.";
-
-DeqToRecFlint::cantwriteoutput="Error: Cannot write to Output-Path `1` ";
-
-Options[DeqToRecFlint]={
-"PathToExecutible"->DirectoryName[$InputFileName],
-"Overwrite"->False,
-"Details"->False,
-"WriteOutputToFile"->False
-};
-BackendDeqToRecFlint="deq_to_rec";
-Clear[DeqToRecFlint];
-DeqToRecFlint[{deqIn_,g_[z_Symbol]},{r_[n_Symbol],point_?NumberQ},OptionsPattern[]]:=Module[
-	{trailingDcoeff,ordR,shiftR,PathDeq,ordD,PathToOutput,k,debug=OptionValue["Details"],AAA,outputPathGivenQ,
-		deq,pathToExecutible,command,tempdir,PathOutputFlint,result,processOut},
-outputPathGivenQ=(OptionValue["WriteOutputToFile"]=!=False);
-If[OptionValue["PathToExecutible"]=!="",
-	pathToExecutible=OptionValue["PathToExecutible"];
-	If[DirectoryQ[pathToExecutible],pathToExecutible=FileNameJoin[{pathToExecutible,OptionValue["Backend"]}]];
-,
-	pathToExecutible=(FileNameJoin[{#,BackendDeqToRecFlint}]&/@PathsToExecutibles)[SystemInformation["Kernel","MachineName"]];
-];
-If[Head[pathToExecutible]===Missing||!FileExistsQ[pathToExecutible],
-	Message[DeqToRecFlint::execnotfound,pathToExecutible , SystemInformation["Kernel","MachineName"]];
-	Abort[];
-];
-
-If[outputPathGivenQ,
-	If[!TrueQ[StringQ[OptionValue["WriteOutputToFile"]]],
-		Message[DeqToRecFlint::optionmalformed,"WriteOutputToFile",OptionValue["WriteOutputToFile"]];
-		Abort[];
-	];
-	PathToOutput=OptionValue["WriteOutputToFile"];
-	CheckFileDoesNotExist[PathToOutput,OptionValue["Overwrite"]];
-	If[!MemberQ[{"m","mx"},FileExtension[PathToOutput]],Message[DeqToRecFlint::wrongextension,PathToOutput];Abort[];];
-	Export[PathToOutput,0];(*check if it is possible to write to PathToOutput*)
-	If[!FileExistsQ[PathToOutput],Message[DeqToRecFlint::cantwriteoutput,PathToOutput];Abort[];];
-	DeleteFile[PathToOutput];
-];
-If[StringQ[deqIn]&&!FileExistsQ[deqIn],Message[DeqToRecFlint::filenotfound,deqIn];Abort[];];
-
-tempdir=CreateDirectory["temp_"<>ToString[$KernelID]<>"_"<>ToString[RandomInteger[10^12-1]]];
-JPrint[debug,"Temporary directory: "<>tempdir];
-
-PathOutputFlint=FileNameJoin[{tempdir,"recFlint.data"}];
-PathDeq=FileNameJoin[{tempdir,"deqM.data"}];
-PathTempfiles=FileNameJoin[{tempdir,BackendDeqToRecFlint}];
-If[FileExistsQ[PathDeq]||FileExistsQ[PathOutputFlint],Message[DeqToRecFlint::notempty,tempdir];Abort[];];
-
-JPrint[debug,"Imported and written Deq: ",AbsoluteTiming[
-deq=If[StringQ[deqIn],Import[deqIn],deqIn];
-deq=If[Head[deq]===Equal,deq[[1]]-deq[[2]],deq];
-{trailingDcoeff,ordD}=WriteDeqToFileFlint[deq,g[z],PathDeq];
-][[1]]];
-
-command={pathToExecutible,PathOutputFlint,PathDeq,Numerator[point],Denominator[point]};
-JPrint[debug,"Run: ",StringRiffle[command]];
-JPrint[debug,"Running "<>FileBaseName[pathToExecutible]<>" ",AbsoluteTiming[
-processOut=RunProcess[command];
-][[1]]];
-If[processOut["ExitCode"]=!=0,
-        Message[DeqToRecFlint::cerror,pathToExecutible];
-        Print[If[StringLength[processOut["StandardOutput"]]>6000,
-			StringTake[processOut["StandardOutput"] ,;;5000]<>"\n....\n"<>StringTake[processOut["StandardOutput"] ,-1000;;],processOut["StandardOutput"]]];
-		Return[processOut];
-];
-(*Print[processOut["StandardOutput"]];*)
-DeleteFile[PathDeq];
-JPrint[debug,"Readed in output: ",AbsoluteTiming[
-	{result,ordR,shiftR}=ReadOutputFlintPoly[PathOutputFlint,n];
-][[1]]];
-DeleteFile[PathOutputFlint];
-DeleteDirectory[tempdir];
-result=((result . Table[r[i+n],{i,-Length[result]+1+shiftR,shiftR}](*-h[n-ordD]*))==0);
-If[outputPathGivenQ,
-	CheckFileDoesNotExist[PathToOutput,OptionValue["Overwrite"]];
-	JPrint[debug,"Exported final output: ",AbsoluteTiming[
-	Export[PathToOutput,result];
-	][[1]]];
-	Return[0];
-,
-	Return[result];
-];
 ]
 
 
