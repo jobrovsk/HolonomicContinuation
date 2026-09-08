@@ -48,7 +48,7 @@ const slong CHUNK=64;
 
 
 /* The optimal size of the primes depends on the CPU. 
-   Try both possibillities to see which one is faster. (Uncomment accordingly */
+   Try both possibilities to see which one is faster. (Uncomment accordingly */
 
 //const ulong FIRST_PRIME=1512762481;//1514687359;//< 2^(30.5)
 //const ulong BITS=31;
@@ -135,7 +135,6 @@ printf("first temp-file: %s\n",filename_temp);
 
 
 fmpz_poly_mat_t Rec;
-//fmpz_poly_mat_t Deq;
 
 
 fmpz_t output,input,den,den_add,num_bound;
@@ -193,11 +192,7 @@ if(have_init_vals){
 	slong d_tcoeff=start_comp-n_val;
 	start_init=0;	
 	slong d_ord=start_comp;
-    //slong d_ord=readFilePoly(Deq,&d_tcoeff,filename_deq);
-    //fmpz_poly_neg(fmpz_poly_mat_entry(Deq, 0, d_ord),fmpz_poly_mat_entry(Deq, 0, d_ord));
     length_init=start_comp-start_init;
-    //if(d_ord<0)
-        //return d_ord; 
     fmpz_mat_init(Num_vals, n_val, end-start_init+1);
     fmpz_mat_zero(Num_vals);
     Den_inits=_fmpz_vec_init(end-start_init+1);
@@ -297,9 +292,6 @@ while(increase_primes){
 	if(have_inhom)
 		fmpz_mat_window_clear(Num_inhom_win);
 
-//	compute_rec_values(Rec, r_lcoeff,& Num_inhom,Den_inhom,&Num_inits,Den_inits,
-	//	have_inhom,next_prime,CHUNK,PACKED_CHUNK,BITS,r_ord,rec_degree,n_val, start_init,
-	//	 start_comp, length_init, end, k_write, primes,nmod_primes,filename_template_temp,0);
     printf("Computing residues combined: ");
     TIMEIT_ONCE_STOP;
     //SHOW_MEMORY_USAGE;
@@ -675,31 +667,6 @@ void compute_rec_values(fmpz_poly_mat_t Rec,slong r_lcoeff,fmpz_mat_t Num_inhom,
 			for(slong j=0;j<rec_degree;j++)
 				nmod_mat_entry(Rec_mod_mat,i,j)=nmod_poly_get_coeff_ui(nmod_poly_mat_entry(Rec_mod,0,i),j);
 			
-		/*		
-        //Set Values_mod to Values modulo mod
-        nmod_mat_window_init(Values_mod_win,Values_mod[p%CHUNK],0,0,n_val,length_init);
-        fmpz_mat_get_nmod_mat(Values_mod_win,*Num_inits);
-        for(slong k=0;k<length_init;k++){        
-			ulong den_inv_mod=nmod_inv(fmpz_get_nmod(Den_inits+k,mod),mod);
-			for(slong l=0;l<n_val;l++){
-				nmod_mat_entry(Values_mod_win,l,k)=nmod_mul(nmod_mat_entry(Values_mod_win,l,k),den_inv_mod,mod);
-			}
-        }
-        nmod_mat_window_clear(Values_mod_win);*/
-        
-        /*//multipoint eval
-        nn_ptr * tree=_nmod_poly_tree_alloc(end-start_init+1);
-        nn_ptr range=_nmod_vec_init(end-start_init+1);
-        nmod_mat_t Evals;
-        nmod_mat_init(Evals,r_ord+1,end-start_init+1,mod.n);
-        for(slong k=start_init;k<=end;k++)
-			range[k-start_init]=k;//reduced!!!!
-        _nmod_poly_tree_build(tree,range,end-start_init+1,mod);
-        for(slong i=0;i<=r_ord;i++)
-			_nmod_poly_evaluate_nmod_vec_fast_precomp(&nmod_mat_entry(Evals,i,0),nmod_poly_mat_entry(Rec_mod,0,i)->coeffs,rec_degree,tree,end-start_init+1,mod);
-        _nmod_poly_tree_free(tree,end-start_init+1);
-        nmod_mat_clear(Evals);
-        _nmod_vec_clear(range);*/
         //------------------------------------
         //             Rec loop
         //------------------------------------
@@ -711,19 +678,11 @@ void compute_rec_values(fmpz_poly_mat_t Rec,slong r_lcoeff,fmpz_mat_t Num_inhom,
             slong n_previous=FLINT_MIN(r_ord,k-start_init);
             for(slong i=r_ord-n_previous;i<=r_ord;i++){ //Rec_mod_k=Rec_mod/.n->k
 				Rec_mod_k[i]=_nmod_vec_dot(&nmod_mat_entry(Rec_mod_mat,i,0),k_pow,rec_degree,mod,rec_eval_dotpar);
-                //Rec_mod_k[i]=poly_evaluate_nmod_powprecomp(nmod_poly_mat_entry(Rec_mod,0,i),k_pow,rec_eval_dotpar);
-                //Rec_mod_k[i]=nmod_poly_evaluate_nmod(nmod_poly_mat_entry(Rec_mod,0,i),k); 
             }
             nmod_mat_window_init(Values_mod_win,Values_mod[p%CHUNK],0,k-start_init-n_previous,n_val,k-start_init);
             nmod_mat_mul_nmod_vec(Next_val_mod,Values_mod_win,Rec_mod_k+r_ord-n_previous,n_previous);
             nmod_mat_window_clear(Values_mod_win);
-            if(have_inhom){
-                //for(slong j=0;j<n_val;j++)
-				    //num_inhom_k_mod[j]=fmpz_get_nmod(fmpz_mat_entry(*Num_inhom,j,k-start_comp),mod); 
-				 //ulong inverse= nmod_inv(fmpz_get_nmod(Den_inhom+k-start_comp,mod),mod);
-				 //_nmod_vec_scalar_mul_nmod(num_inhom_k_mod,num_inhom_k_mod,n_val,inverse,mod);
-				 //_nmod_vec_add(Next_val_mod,Next_val_mod,num_inhom_k_mod,n_val,mod);
-			
+            if(have_inhom){			
                 for(slong j=0;j<n_val;j++)
 					Next_val_mod[j]=_nmod_add(Next_val_mod[j],nmod_mat_entry(Inhom_mod[p%CHUNK],j,k-start_comp) ,mod);
 			}
@@ -741,8 +700,6 @@ void compute_rec_values(fmpz_poly_mat_t Rec,slong r_lcoeff,fmpz_mat_t Num_inhom,
 
         printf("computed remainder %lu: ",p);
         TIMEIT_ONCE_STOP;
-        //if(end>3260-start_init && n_val>1)
-			//flint_printf("Value: %wu \n",nmod_mat_get_entry(Values_mod[p%CHUNK],1,3260-start_init));
 		
     }
 	//write computed residues to file. 

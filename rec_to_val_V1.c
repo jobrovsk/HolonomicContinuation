@@ -48,6 +48,10 @@ char * get_temp_file_name(char * output,const char * filename_template_temp,slon
 int main(int argc, char* argv[]){
 omp_get_num_procs();
 const slong CHUNK=64;
+
+/* The optimal size of the primes depends on the CPU. 
+   Try both possibilities to see which one is faster. (Uncomment accordingly */
+
 //const ulong firstprime=1512762481;//1514687359;//< 2^(30.5)
 //const ulong BITS=31;
 const ulong firstprime=6085156183315683391; //<2^(62.5)
@@ -55,10 +59,6 @@ const ulong BITS=63;
 const ulong PACKED_CHUNK=(CHUNK * BITS - 1) / FLINT_BITS + 1;
 //const ulong firstprime=18446744073708659869U; //<2^(64)
 
-//const slong MAX_NUM_PRIMES=32768;//If more primes are needed this might point to an error
-
-
-//flint_printf("num_threads: %wd\n",flint_get_num_threads());
 
 //slong start;//index of the first initial value
 slong k; //index of the next value which will be computed
@@ -187,11 +187,7 @@ if(have_init_vals){
 	slong d_tcoeff=start_comp-n_val;
 	start_init=0;	
 	slong d_ord=start_comp;
-    //slong d_ord=readFilePoly(Deq,&d_tcoeff,filename_deq);
-    //fmpz_poly_neg(fmpz_poly_mat_entry(Deq, 0, d_ord),fmpz_poly_mat_entry(Deq, 0, d_ord));
     length_init=start_comp-start_init;
-    //if(d_ord<0)
-        //return d_ord; 
     fmpz_mat_init(Num_inits, n_val, length_init);
     fmpz_mat_zero(Num_inits);
     Den_inits=_fmpz_vec_init(length_init);
@@ -221,26 +217,11 @@ if(have_inhom){
 
 
 
-
-
 //const slong deq_degree=fmpz_poly_mat_max_length(Deq);//Actually degree+1
 const slong rec_degree=fmpz_poly_mat_max_length(Rec);//Actually degree+1
 slong k_write=start_comp;    //next value for which we have to do reconstruction
 
-/*
-nmod_mat_t Values_mod[CHUNK];
-nn_ptr Rec_mod_k=_nmod_vec_init(r_ord+1);
-nn_ptr Next_val_mod=_nmod_vec_init(n_val);
-nmod_poly_mat_t Rec_mod;
-nmod_mat_t Values_mod_win,Rec_mod_mat;
-nn_ptr k_pow=_nmod_vec_init(rec_degree);
-nn_ptr num_inhom_k_mod=_nmod_vec_init(n_val);
-//nmod_mat_t K_fpow;
-//nmod_mat_init(K_fpow,start+r_ord+1,d_ord+1,primes[0]);
-for(l=0;l<CHUNK;l++)
-	nmod_mat_init(Values_mod[l],n_val,end-start_init+1,primes[0]);
-SHOW_MEMORY_USAGE
-*/
+
 
 flint_printf("r_ord: %wd \n",r_ord);
 flint_printf("r_lcoeff: %wd \n",r_lcoeff);
@@ -286,128 +267,6 @@ while(increase_primes){
 	flint_set_num_threads(1);
 
 
-//	compute_rec_values(Rec, r_lcoeff,& Num_inhom,Den_inhom,&Num_inits,Den_inits,
-	//	have_inhom,next_prime,CHUNK,PACKED_CHUNK,BITS,r_ord,rec_degree,n_val, start_init,
-	//	 start_comp, length_init, end, k_write, primes,nmod_primes,filename_template_temp,0);
-    
-/*    for(p=next_prime;p<n_primes;p++){//this loop may be parallized 
-        //Set modulus to current prime
-        nmod_t mod=nmod_primes[p];
-        nmod_mat_set_mod(Values_mod[p%CHUNK],primes[p]);
-        nmod_mat_init(Rec_mod_mat,r_ord+1,rec_degree,primes[p]);
-        //nmod_mat_set_mod(Rec_mod_mat,primes[p]);
-        
-        nmod_poly_mat_init(Rec_mod, 1, r_ord+1,primes[p]); 
-        const dot_params_t rec_eval_dotpar=_nmod_vec_dot_params(rec_degree,mod);
-        
-        TIMEIT_ONCE_START
-        
-        
-        //reduce Rec modulo mod
-        for(i=0;i<=r_ord;i++)
-            fmpz_poly_get_nmod_poly(nmod_poly_mat_entry(Rec_mod,0,i),fmpz_poly_mat_entry(Rec,0,i));
-
-		for(i=0;i<=r_ord;i++)
-			for(j=0;j<rec_degree;j++)
-				nmod_mat_entry(Rec_mod_mat,i,j)=nmod_poly_get_coeff_ui(nmod_poly_mat_entry(Rec_mod,0,i),j);
-				
-        //Set Values_mod to Values modulo mod
-        nmod_mat_window_init(Values_mod_win,Values_mod[p%CHUNK],0,0,n_val,length_init);
-        fmpz_mat_get_nmod_mat(Values_mod_win,Num_inits);
-        for(slong k=0;k<length_init;k++){        
-			ulong den_inv_mod=nmod_inv(fmpz_get_nmod(Den_inits+k,mod),mod);
-			for(slong l=0;l<n_val;l++){
-				nmod_mat_entry(Values_mod_win,l,k)=nmod_mul(nmod_mat_entry(Values_mod_win,l,k),den_inv_mod,mod);
-			}
-        }
-        nmod_mat_window_clear(Values_mod_win);
-        
-        ////multipoint eval
-        //nn_ptr * tree=_nmod_poly_tree_alloc(end-start_init+1);
-        //nn_ptr range=_nmod_vec_init(end-start_init+1);
-        //nmod_mat_t Evals;
-        //nmod_mat_init(Evals,r_ord+1,end-start_init+1,mod.n);
-        //for(slong k=start_init;k<=end;k++)
-			//range[k-start_init]=k;//reduced!!!!
-        //_nmod_poly_tree_build(tree,range,end-start_init+1,mod);
-        //for(slong i=0;i<=r_ord;i++)
-			//_nmod_poly_evaluate_nmod_vec_fast_precomp(&nmod_mat_entry(Evals,i,0),nmod_poly_mat_entry(Rec_mod,0,i)->coeffs,rec_degree,tree,end-start_init+1,mod);
-        //_nmod_poly_tree_free(tree,end-start_init+1);
-        //nmod_mat_clear(Evals);
-        //_nmod_vec_clear(range);
-        //------------------------------------
-        //             Rec loop
-        //------------------------------------
-        TIMEIT_ONCE_START
-        k_pow[0]=1;
-        for(k = start_comp; k <= end; k++){
-            for(i=1;i<rec_degree;i++)
-                k_pow[i]=nmod_mul(k_pow[i-1],k-r_lcoeff,mod);
-            slong n_previous=FLINT_MIN(r_ord,k-start_init);
-            for(i=r_ord-n_previous;i<=r_ord;i++){ //Rec_mod_k=Rec_mod/.n->k
-				Rec_mod_k[i]=_nmod_vec_dot(&nmod_mat_entry(Rec_mod_mat,i,0),k_pow,rec_degree,mod,rec_eval_dotpar);
-                //Rec_mod_k[i]=poly_evaluate_nmod_powprecomp(nmod_poly_mat_entry(Rec_mod,0,i),k_pow,rec_eval_dotpar);
-                //Rec_mod_k[i]=nmod_poly_evaluate_nmod(nmod_poly_mat_entry(Rec_mod,0,i),k); 
-            }
-            nmod_mat_window_init(Values_mod_win,Values_mod[p%CHUNK],0,k-start_init-n_previous,n_val,k-start_init);
-            nmod_mat_mul_nmod_vec(Next_val_mod,Values_mod_win,Rec_mod_k+r_ord-n_previous,n_previous);
-            if(have_inhom){
-				 _fmpz_vec_get_nmod_vec(num_inhom_k_mod,fmpz_mat_entry(Num_inhom,k-start_comp,0),n_val,mod); 
-				 ulong inverse= nmod_inv(fmpz_get_nmod(Den_inhom+k-start_comp,mod),mod);
-				 _nmod_vec_scalar_mul_nmod(num_inhom_k_mod,num_inhom_k_mod,n_val,inverse,mod);
-				 _nmod_vec_add(Next_val_mod,Next_val_mod,num_inhom_k_mod,n_val,mod);
-			}
-            if(have_inhom){
-                for(slong j=0;j<n_val;j++)
-				    num_inhom_k_mod[j]=fmpz_get_nmod(fmpz_mat_entry(Num_inhom,j,k-start_comp),mod); 
-				 ulong inverse= nmod_inv(fmpz_get_nmod(Den_inhom+k-start_comp,mod),mod);
-				 _nmod_vec_scalar_mul_nmod(num_inhom_k_mod,num_inhom_k_mod,n_val,inverse,mod);
-				 _nmod_vec_add(Next_val_mod,Next_val_mod,num_inhom_k_mod,n_val,mod);
-			}
-            
-            
-            for(j=0;j<n_val;j++){
-                nmod_mat_entry(Values_mod[p%CHUNK],j,k-start_init)=nmod_div(Next_val_mod[j],Rec_mod_k[r_ord],mod);
-            } 
-            nmod_mat_window_clear(Values_mod_win);
-        } 
-        nmod_mat_clear(Rec_mod_mat);
-        nmod_poly_mat_clear(Rec_mod); 
-        printf("  loop rec: ");
-        TIMEIT_ONCE_STOP
-        
-        
-        //write computed residues to file. Values_mod will be overwritten later to save memory
-        if((p+1)%CHUNK==0){
-            TIMEIT_ONCE_START               
-            FILE * file_tmp = fopen(get_temp_file_name(filename_temp,filename_template_temp,p/CHUNK), "w");
-            for(k = k_write; k <= end; k++){
-                 //flint_printf("write k = %wd\n",k);
-                for(j=0;j<n_val;j++){ 
-                    for(l=0;l<CHUNK;l++){
-                        val_chunk_k[l]=nmod_mat_get_entry(Values_mod[l],j,k-start_init);
-                    }                    
-                    _nmod_poly_bit_pack(val_chunk_packed, val_chunk_k, CHUNK, BITS);
-                    fmpz_set_ui_array(output,val_chunk_packed,PACKED_CHUNK);
-                    //fmpz_set_ui_array(output,val_chunk_k,CHUNK);
-                    if(fmpz_out_raw(file_tmp,output)==0){
-                        flint_printf("unable to write to file\n");
-                        return 15;
-                    }
-                }       
-            }
-            
-            
-            fclose(file_tmp);
-            printf("  write to file: ");
-            TIMEIT_ONCE_STOP
-        }
-        printf("computed residue %lu: ",p);
-        TIMEIT_ONCE_STOP
-        if(end>3260-start_init && n_val>1)
-		    flint_printf("Value: %wu \n",nmod_mat_get_entry(Values_mod[p%CHUNK],1,3260-start_init));
-		
-    }*/
 
     printf("Computing residues combined: ");
     TIMEIT_ONCE_STOP;
@@ -437,13 +296,13 @@ while(increase_primes){
     for(l=next_prime/CHUNK;l<n_primes/CHUNK;l++)
         file_tmp[l]=fopen(get_temp_file_name(filename_temp, filename_template_temp,l) ,"r");
     file_out=fopen(filename_out,"a");
-    //nmod_t checkmod;
+
 
     fmpz_t den_bound;fmpz_init(den_bound);
 	
     fmpz_t den_bound_safety;fmpz_init(den_bound_safety);
 
-    //nmod_init(&checkmod,primes[n_primes-1]);
+
     for(p=next_prime;p<n_primes;p++)
         den_mod[p]=fmpz_get_nmod(den,nmod_primes[p]);
 
@@ -614,10 +473,6 @@ slong readFileRationals(fmpz_mat_t * Val_Num,fmpz** Denominators,slong n_val, sl
     fmpq_mat_init(CurVals,n_val,1);
     fmpz_mat_init(*Val_Num,n_val,length);
     *Denominators=_fmpz_vec_init(length);
-    //flint_printf("start_init %wd\n",start);
-    //flint_printf("start_comp %wd\n",end);
-    //flint_printf("length %wd\n",length);
-    //flint_printf("n_val %wd\n",n_val);
     for(slong i=0;i<length;i++){
         for(slong j=0;j<n_val;j++){
             if(feof(file_initial)){  
@@ -740,19 +595,6 @@ void compute_rec_values(fmpz_poly_mat_t Rec,slong r_lcoeff,fmpz_mat_t * Num_inho
         }
         nmod_mat_window_clear(Values_mod_win);
         
-        /*//multipoint eval
-        nn_ptr * tree=_nmod_poly_tree_alloc(end-start_init+1);
-        nn_ptr range=_nmod_vec_init(end-start_init+1);
-        nmod_mat_t Evals;
-        nmod_mat_init(Evals,r_ord+1,end-start_init+1,mod.n);
-        for(slong k=start_init;k<=end;k++)
-			range[k-start_init]=k;//reduced!!!!
-        _nmod_poly_tree_build(tree,range,end-start_init+1,mod);
-        for(slong i=0;i<=r_ord;i++)
-			_nmod_poly_evaluate_nmod_vec_fast_precomp(&nmod_mat_entry(Evals,i,0),nmod_poly_mat_entry(Rec_mod,0,i)->coeffs,rec_degree,tree,end-start_init+1,mod);
-        _nmod_poly_tree_free(tree,end-start_init+1);
-        nmod_mat_clear(Evals);
-        _nmod_vec_clear(range);*/
         //------------------------------------
         //             Rec loop
         //------------------------------------
@@ -764,8 +606,6 @@ void compute_rec_values(fmpz_poly_mat_t Rec,slong r_lcoeff,fmpz_mat_t * Num_inho
             slong n_previous=FLINT_MIN(r_ord,k-start_init);
             for(slong i=r_ord-n_previous;i<=r_ord;i++){ //Rec_mod_k=Rec_mod/.n->k
 				Rec_mod_k[i]=_nmod_vec_dot(&nmod_mat_entry(Rec_mod_mat,i,0),k_pow,rec_degree,mod,rec_eval_dotpar);
-                //Rec_mod_k[i]=poly_evaluate_nmod_powprecomp(nmod_poly_mat_entry(Rec_mod,0,i),k_pow,rec_eval_dotpar);
-                //Rec_mod_k[i]=nmod_poly_evaluate_nmod(nmod_poly_mat_entry(Rec_mod,0,i),k); 
             }
             nmod_mat_window_init(Values_mod_win,Values_mod[p%CHUNK],0,k-start_init-n_previous,n_val,k-start_init);
             nmod_mat_mul_nmod_vec(Next_val_mod,Values_mod_win,Rec_mod_k+r_ord-n_previous,n_previous);
@@ -793,14 +633,12 @@ void compute_rec_values(fmpz_poly_mat_t Rec,slong r_lcoeff,fmpz_mat_t * Num_inho
             TIMEIT_ONCE_START               
             FILE * file_tmp= fopen(get_temp_file_name(filename_temp,filename_template_temp,p/CHUNK), "w");
             for(slong k = k_write; k <= end; k++){
-                 //flint_printf("write k = %wd\n",k);
                 for(slong j=0;j<n_val;j++){ 
                     for(slong l=0;l<CHUNK;l++){
                         val_chunk_k[l]=nmod_mat_get_entry(Values_mod[l],j,k-start_init);
                     }                    
                     _nmod_poly_bit_pack(val_chunk_packed, val_chunk_k, CHUNK, BITS);
                     fmpz_set_ui_array(output,val_chunk_packed,PACKED_CHUNK);
-                    //fmpz_set_ui_array(output,val_chunk_k,CHUNK);
                     if(fmpz_out_raw(file_tmp,output)==0){
                         flint_printf("unable to write to file\n");
                     }
@@ -815,8 +653,6 @@ void compute_rec_values(fmpz_poly_mat_t Rec,slong r_lcoeff,fmpz_mat_t * Num_inho
         
         printf("computed remainder %lu: ",p);
         TIMEIT_ONCE_STOP;
-        //if(end>3260-start_init && n_val>1)
-		//	flint_printf("Value: %wu \n",nmod_mat_get_entry(Values_mod[p%CHUNK],1,3260-start_init));
 		
     }
     
