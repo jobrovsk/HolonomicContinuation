@@ -9,11 +9,12 @@ HolonomicContinuation is a Mathematica package for analytic continuation of holo
 ## Requirements
 
 HolonomicContinuation is developed and tested for Wolfram Mathematica Versions 13-15, but should work on any resent version of Mathematica.
-For the optional C backend, FLINT 3.4.0 [flintlib.org](https://flintlib.org) must be installed. 
+For the optional C backend, FLINT 3.4.0 must be installed. 
 
 ## Installation
 
 Clone repository and move the directory HolonomicContinuation into one of the directories in $Path where Mathematica can find it.
+
 To use the C-backends rec_to_val_V1.c or rec_to_val_V2.c navigate to the directory HolonomicContinuation and compile e.g. with
 
     gcc -o "rec_to_val_V2" "rec_to_val_V2.c" -O3  -march=native  -lflint  -fopenmp -I/path/to/flint/include -L/path/to/flint/lib  -Wl,-rpath,"/path/to/flint/lib"
