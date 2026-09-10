@@ -24,6 +24,16 @@ where the flags -I -L and -Wl,-rpath, give, if necessary, the path to a suitable
 
 See the Mathematica notebook RunningExample.nb and the usage-messages of the individual functions available e.g. via ?GetCoeffSubsFast
 
+## Citing HolonomicContinuation
+
+If HolonomicContinuation is useful for your research, please cite the following two articles, which describe the research that led to the development of this package:
+
+J. Bluemlein, A. de Freitas, P. Marquard, J. Obrovsky, C. Schneider. Holonomic techniques for massive 3-loop form factors: the gluonic case. 
+In: Proceedings of Loops and Legs in Quantum Field Theory, P. Marquard, M. Steinhauser (ed.) PoS(LL2026)071, 2026
+
+J. Bluemlein, A. de Freitas, P. Marquard, J. Obrovsky, C. Schneider. Analytic results on the massive three-loop form factors: gluonic contributions.
+Technical report no. 26-12 in RISC Report Series, Research Institute for Symbolic Computation (RISC), Johannes Kepler University Linz, Austria. 2026.
+
 ## Authors
 
 Abilio de Freitas

@@ -13,7 +13,7 @@
 
 
 (* ::Input::Initialization:: *)
-$HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.2 (09/07/2026)";
+$HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.3 (09/09/2026)";
 If[TrueQ[$Notebooks],CellPrint[Cell[BoxData[$HolonomicContinuationVersion],"Print",FontColor->RGBColor[0,0,0],CellFrame->0.5,Background->RGBColor[0.796887,0.789075,0.871107]]],
 Print[$HolonomicContinuationVersion]];
 
@@ -165,12 +165,8 @@ The output is a list. The first item in the list is the size of the extra coeffi
 Remark: The functions 'func1' and 'func2' must be built by the function call 'BuildMatchExpansions'."
 
 
-
-
-
-
 (* ::Input::Initialization:: *)
-GetBestPointMatch::usage="GetBestPointMatch[s,freecoeffs,testcoeff,delta,workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iterations] executes systematically MatchExpansions trough the interval [lpoint,rpoint] by the disection method using a certain number of iterations specified by 'iteration'. Here 'nstartpts' determines the number of check points within the specified interval in which one searches a good point. The inputs 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
+GetBestPointMatch::usage="GetBestPointMatch[s,freecoeffs,testcoeff,delta,workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iterations] executes systematically MatchExpansions through the interval [lpoint,rpoint] by the disection method using a certain number of iterations specified by 'iteration'. Here 'nstartpts' determines the number of check points within the specified interval in which one searches a good point. The inputs 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
 
 The output is a list. The first item is the best point represented as a rational number and the second entry is the expected precision using 'testcoeff'. The value 'prec' determines how good the rational number value of the found point approximtes the floating point representation. The parameters 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
 
@@ -179,10 +175,6 @@ Remark: To make this command feasible, it is executed in parallel. Thus suffient
     DistributeDefinitions[freecoeffs,testcoeff,funcA,funcB]
     ParallelEvaluate[$MaxExtraPrecision =10200]
     ParallelEvaluate[Get[''HolonomicContinuation.m'']]"
-
-
-(* ::Input:: *)
-(**)
 
 
 (* ::Input:: *)
@@ -208,7 +200,6 @@ will give
 BuildMatchExpansions::usage="BuildMatchExpansions[FF, i, z, s, {smA, startA, ncA, nlogsA, ruleA}, {smB, startB, ncB, nlogsB, ruleB}, {coeff, j, k}] constructs two expansions to be matched. The output is a list containing the two expansions. The inputs 'FF' and 'i' are the form factor and the specific case (an integer) under consideration, respectively. The expansions are built in the variable 'z' using the function 'BuildExpansion'. The first expansion is built using the input parameters {smA,startA,ncA,nlogsA,ruleA}, where startA, ncA and nlogsA will be the input for the function 'BuildExpansion'. The variable 'smA' indicates the point in 's' around which we are doing the expansion, and 'ruleA' is a rule for replacing 'z' in terms of 's'. The second expansion is built using the input parameters {smB,startB,ncB,nlogsB,ruleB} in a similar way, but an extra term is added using 'coeff'. This should be a coefficient we know beforehand to be equal to zero, which we add to the expansion in order to be able to determine the precision of our calculation. The values of 'j' and 'k' are such that the extra term added is given by coeff*z^j*Log[z]^k.
 
 In order to use this function, the list of coefficient substitutions must be available for both expansions, as well as the numerical solution of the free coefficients of the first expansion, since 'BuildMatchExpansions' looks for this information in order to build the expansions, based on the values of 'smA' and 'smB'."
-
 
 
 
@@ -380,22 +371,14 @@ Options[ParallelGetDEQspt]={"Method"->"Optimal split","Print s-point"->"no","Che
 
 ParallelGetDEQspt[diffeq_,{s_,spt_},g_,z_,qlist_,nsplit_,OptionsPattern[]]:=Module[ {diffeqlist,l,i,T,diffeqz,inhompart,hompart,\[Alpha],res},
 diffeqlist=SplitDiffEq[diffeq,g,s,nsplit,"Method"->OptionValue["Method"]];
-l=Length[diffeqlist]; (* Print[l]; *)
+l=Length[diffeqlist];
 DistributeDefinitions[diffeqlist,GetDEQsptInternal];
 
 T=ParallelTable[GetDEQsptInternal[diffeqlist[[i]],{s,spt},g,z,qlist],{i,1,l}];
 diffeqz=Plus@@T;
-inhompart=diffeqz /. \!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]->0 /. g[z]->0;
+inhompart=diffeqz /. Derivative[_][g][z]->0 /. g[z]->0;
 hompart=diffeqz-inhompart;
-res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],\!\(\*SuperscriptBox[\(g\), 
-TagBox[
-RowBox[{"(", "_", ")"}],
-Derivative],
-MultilineFunction->None]\)[z]},Expand]];
+res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],Derivative[_][g][z]},Expand]];
 If[OptionValue["Print s-point"]=="yes",Print[spt],Null];
 If[OptionValue["Check indicial equation"]=="no",Null,CheckIndicial[res,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
 MakeIntegerDE[res,g[z]]]
