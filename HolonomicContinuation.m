@@ -160,8 +160,33 @@ The input variables are
 'workingprecision': self-explanatory.
 'wmp': used to reduce the working precision in case it's necessary ('NSolve' is used and it may demand it).
 
-The output is a list. The first item in the list is the size of the extra coefficient calculated with the matching conditions, which we can then compare with the known value. The second item in the list is the solution to all free coefficients found using the matching conditions."
+The output is a list. The first item in the list is the size of the extra coefficient calculated with the matching conditions, which we can then compare with the known value. The second item in the list is the solution to all free coefficients found using the matching conditions.
 
+Remark: The functions 'func1' and 'func2' must be built by the function call 'BuildMatchExpansions'."
+
+
+
+
+
+
+(* ::Input::Initialization:: *)
+GetBestPointMatch::usage="GetBestPointMatch[s,freecoeffs,testcoeff,delta,workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iterations] executes systematically MatchExpansions trough the interval [lpoint,rpoint] by the disection method using a certain number of iterations specified by 'iteration'. Here 'nstartpts' determines the number of check points within the specified interval in which one searches a good point. The inputs 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
+
+The output is a list. The first item is the best point represented as a rational number and the second entry is the expected precision using 'testcoeff'. The value 'prec' determines how good the rational number value of the found point approximtes the floating point representation. The parameters 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
+
+Remark: To make this command feasible, it is executed in parallel. Thus suffiently many kernels should be launched. In particlar, the definitions of the values 'freecoeffs','testcoeff','funcA','funcB' (for details see MatchExpansions) must be distributed to the subkernels, the value '$MaxExtraPrecision' must be set high enough in the subkernels and the package 'HolonomicContinuation.m' must be loaded into the subkernels. This can be carried out, e.g., with the calls
+
+    DistributeDefinitions[freecoeffs,testcoeff,funcA,funcB]
+    ParallelEvaluate[$MaxExtraPrecision =10200]
+    ParallelEvaluate[Get[''HolonomicContinuation.m'']]"
+
+
+(* ::Input:: *)
+(**)
+
+
+(* ::Input:: *)
+(**)
 
 
 (* ::Input::Initialization:: *)
@@ -194,7 +219,7 @@ Begin["`Private`"]
 $startTimeUsed=TimeUsed[];
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*Transform to DEs at different points*)
 
 
@@ -348,6 +373,32 @@ Which[
 OptionValue["Method"]=="One by one",          Table[T[[j]],{j,1,Length[T]}],
 OptionValue["Method"]=="Reduced split",   ReducedSplit[T,nsplit] ,
 OptionValue["Method"]=="Optimal split",   OptimalSplit[T,nsplit] ]  ]
+
+
+(* ::Input::Initialization:: *)
+Options[ParallelGetDEQspt]={"Method"->"Optimal split","Print s-point"->"no","Check indicial equation"->"no","Initial shift"->7,"Details"->"no"};
+
+ParallelGetDEQspt[diffeq_,{s_,spt_},g_,z_,qlist_,nsplit_,OptionsPattern[]]:=Module[ {diffeqlist,l,i,T,diffeqz,inhompart,hompart,\[Alpha],res},
+diffeqlist=SplitDiffEq[diffeq,g,s,nsplit,"Method"->OptionValue["Method"]];
+l=Length[diffeqlist]; (* Print[l]; *)
+DistributeDefinitions[diffeqlist,GetDEQsptInternal];
+
+T=ParallelTable[GetDEQsptInternal[diffeqlist[[i]],{s,spt},g,z,qlist],{i,1,l}];
+diffeqz=Plus@@T;
+inhompart=diffeqz /. \!\(\*SuperscriptBox[\(g\), 
+TagBox[
+RowBox[{"(", "_", ")"}],
+Derivative],
+MultilineFunction->None]\)[z]->0 /. g[z]->0;
+hompart=diffeqz-inhompart;
+res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],\!\(\*SuperscriptBox[\(g\), 
+TagBox[
+RowBox[{"(", "_", ")"}],
+Derivative],
+MultilineFunction->None]\)[z]},Expand]];
+If[OptionValue["Print s-point"]=="yes",Print[spt],Null];
+If[OptionValue["Check indicial equation"]=="no",Null,CheckIndicial[res,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
+MakeIntegerDE[res,g[z]]]
 
 
 (* ::Section::Closed:: *)
@@ -1164,7 +1215,7 @@ Clear[ReconstructRationalNumber]
 ReconstructRationalNumber[n_,p_]:=If[n===0,0,(((#[[2,2]]/#[[1,2,2]])&)[Internal`HGCD[p,Mod[n,p]]]*2)/2];
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Compute general solutions (fast) using the underlying recurrence and initial values*)
 
 
@@ -1481,7 +1532,7 @@ Do[
 {substLogN,substLogPart,inhomExpr} ]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*Match points*)
 
 
@@ -1520,28 +1571,6 @@ minval=Min[Table[newlist[[i,2]],{i,1,Length[list]}]];
 p=Position[newlist,minval][[1,1]];
 L={Rationalize[list[[p,1]],prec],list[[p,2]]};
 If[OptionValue["Show interval"]=="yes",{interval,L},L] ]
-
-
-(* ::Input::Initialization:: *)
-Options[GetBestMatchSetUp]={"Full list"->"no"};
-
-GetBestMatchSetUp[s_,freecoeffs_,testcoeff_,deltalist_,workingprecision1_,wmp_,{lpoint_,rpoint_},nstartpts_,prec_,iterations_,OptionsPattern[]]:=Module[{T,i,newT,minval,p},
-T=Table[GetBestPointMatch[s,freecoeffs,testcoeff,deltalist[[i]],workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iterations,"Show interval"->OptionValue["Full list"]],{i,1,Length[deltalist]}];
-Print[T];
-newT=Abs[T];
-minval=Min[Table[newT[[i,2]],{i,1,Length[T]}]];
-p=Position[newT,minval][[1,1]];
-{T[[p]],deltalist[[p]]} ]
-
-
-(* ::Input::Initialization:: *)
-GetBestMatchSetUp2[s_,freecoeffs_,testcoeff_,deltalist_,workingprecision1_,wmp_,{lpoint_,rpoint_},nstartpts_,prec_,{iter1_,iter2_}]:=Module[{bestsetup,bestdelta,interval,extraiters,T,p},
-bestsetup=GetBestMatchSetUp[s,freecoeffs,testcoeff,deltalist,workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iter1,"Full list"->"yes"];
-bestdelta=bestsetup[[2]]; Print["Best value of delta:",bestdelta];
-interval=bestsetup[[1,1]]; Print["Best interval for this value of delta: ",interval];
-extraiters=iter2-iter1;
-T=GetBestPointMatch[s,freecoeffs,testcoeff,bestdelta,workingprecision1,wmp,{interval[[1]],interval[[2]]},nstartpts,prec,extraiters,"Show interval"->"yes"];
-{T[[2]],bestdelta} ]
 
 
 (* ::Input::Initialization:: *)
