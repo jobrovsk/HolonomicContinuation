@@ -33,7 +33,7 @@ J. Bluemlein, A. de Freitas, P. Marquard, J. Obrovsky, C. Schneider. Holonomic t
 In: Proceedings of Loops and Legs in Quantum Field Theory, P. Marquard, M. Steinhauser (ed.) PoS(LL2026)071, 2026
 
 J. Bluemlein, A. de Freitas, P. Marquard, J. Obrovsky, C. Schneider. Analytic results on the massive three-loop form factors: gluonic contributions.
-Technical report no. 26-12 in RISC Report Series, Research Institute for Symbolic Computation (RISC), Johannes Kepler University Linz, Austria. 2026.
+Technical report no. 26-12 in RISC Report Series, Research Institute for Symbolic Computation (RISC), Johannes Kepler University Linz, Austria. 2026.  [arXiv:2609.22034 [hep-ph]]
 
 ## Authors
 
