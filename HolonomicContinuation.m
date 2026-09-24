@@ -13,7 +13,7 @@
 
 
 (* ::Input::Initialization:: *)
-$HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.3 (09/09/2026)";
+$HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.2 (09/07/2026)";
 If[TrueQ[$Notebooks],CellPrint[Cell[BoxData[$HolonomicContinuationVersion],"Print",FontColor->RGBColor[0,0,0],CellFrame->0.5,Background->RGBColor[0.796887,0.789075,0.871107]]],
 Print[$HolonomicContinuationVersion]];
 
@@ -37,32 +37,36 @@ MakeIntegerDE::usage="MakeIntegerDe[diffeq,g[z]] clears integer denominators, i.
 
 
 (* ::Input::Initialization:: *)
-GetDEQInf::usage="GetDEQInf[diffeqs, {s,spt}, g,z] obtains a differential equation at the point s=+/-infinity, starting from the differential equation 'diffeqs', which is the one that we obtain from the expansion at s=0. The resulting differential equation is written in terms of g[z] (that is, it's obyed by g[z]). The relation between the variable 'z' and the variable 's' depends on 'spt' :
+GetDEQInf::usage="GetDEQInf[diffeqs, {s,spt}, g,z,opts] obtains a differential equation at the point s=+/-infinity, starting from the differential equation 'diffeqs', which is the one that we obtain from the expansion at s=0. The resulting differential equation is written in terms of g[z] (that is, it's obyed by g[z]). The relation between the variable 'z' and the variable 's' depends on 'spt' :
 
-If spt=-Infinity then s = -1/z
-If spt=Infinity then s = 1/z
+If spt=-Infinity and \"RootPoint\"\[Rule]False then s = -1/z
+If spt=Infinity and \"RootPoint\"\[Rule]False  then s = 1/z
+If spt=-Infinity and \"RootPoint\"\[Rule]True then s = Sqrt[-1/z]
+If spt=Infinity and \"RootPoint\"\[Rule]True then s = Sqrt[1/z]
 
 The resulting differential equation will be satisfied by a power/log expansion in z at z=+/-Infinity."
 
 
 (* ::Input::Initialization:: *)
-GetDEQspt::usage="GetDEQspt[diffeqs, {s, spt}, g, z, qlist] obtains a differential equation at the point s=spt, starting from the differential equation 'diffeqs', which is the one that we obtain from the expansion at s=0. The resulting differential equation is written in terms of g[z] (that is, it's obyed by g[z]). The relation between the variable 'z' and the variable 's' depends on 'spt' and the list of points in 'qlist' as follows:
+GetDEQspt::usage="GetDEQspt[diffeqs, {s, spt}, g, z,opts] obtains a differential equation at the point s=spt, starting from the differential equation 'diffeqs', which is the one that we obtain from the expansion at s=0. The resulting differential equation is written in terms of g[z] (that is, it's obyed by g[z]). The relation between the variable 'z' and the variable 's' depends on 'spt' and the list of points in 'qlist' as follows:
 
-If spt < 0 and spt \[NotElement] qlist  then s = z + spt
-If spt > 0 and spt \[NotElement] qlist  then s = spt - z
-If spt < 0 and spt \[Element] qlist  then s = \!\(\*SuperscriptBox[\(z\), \(2\)]\) + spt
-If spt > 0 and spt \[Element] qlist  then s = spt - \!\(\*SuperscriptBox[\(z\), \(2\)]\) 
+If spt < 0 and \"RootPoint\"\[Rule]False then s = z + spt
+If spt > 0 and \"RootPoint\"\[Rule]False  then s = spt - z
+If spt < 0 and \"RootPoint\"\[Rule]True  then s = \!\(\*SuperscriptBox[\(z\), \(2\)]\) + spt
+If spt > 0 and \"RootPoint\"\[Rule]True then s = spt - \!\(\*SuperscriptBox[\(z\), \(2\)]\) 
 
 The resulting differential equation will be satisfied by a power/log expansion in z at z=0.
 
 Options:
-\"Print s-point\" can be set to \"yes\", in which case the value of 'spt' will be printed, or \"no\", in which case it won't. Default: \"no\".
-\"Check indicial equation\" can be set either to \"yes\", in which case a printout appears indicating what type of solutions the indicial equation has (this is done using the function 'CheckIndicial') or \"no\", in which case it won't.  Default: \"no\"."
+\"Print s-point\" can be set to True, in which case the value of 'spt' will be printed, or False, in which case it won't. Default: False.
+\"Check indicial equation\" can be set either to True, in which case a printout appears indicating what type of solutions the indicial equation has (this is done using the function 'CheckIndicial') or False, in which case it won't.  Default: False
+\"RootPoint\" defines if the point is rooted.."
+
 
 
 
 (* ::Input::Initialization:: *)
-ParallelGetDEQspt::usage="ParallelGetDEQspt[diffeqs, {s, spt}, g, z, qlist, nsplit] computes the same as 'GetDEQspt', but it first splits the differential equation into several pieces, evaluates each one of then separately in parallel, and the adds up the results. This allows to obtain the result much faster than with 'GetDEQspt'. The splitting is done based on the following options.
+ParallelGetDEQspt::usage="ParallelGetDEQspt[diffeqs, {s, spt}, g, z, nsplit, opts] computes the same as 'GetDEQspt', but it first splits the differential equation into several pieces, evaluates each one of then separately in parallel, and the adds up the results. This allows to obtain the result much faster than with 'GetDEQspt'. The splitting is done based on the following options.
 
 If \"Method\"\[Rule]\"One by one\", then 'diffeq' is split in as many terms as it has, in other words, if the order of the differential equation is r, then 'diffeq' will be split in a list of r+2 terms (one for each derivative in g[s], another one for the g[s] term itself, and another one for the inhomogeneous part).
 
@@ -111,9 +115,11 @@ Options: \"Number of coeffs to get parameters\" sets the number of coefficients 
 
 
 (* ::Input::Initialization:: *)
-DEToRE::usage="DEToRE[diffeq,g,h,z,n] produces the underlying recurrences of the differential equation diffeq in g[z] and the inhomogenous part h[z] in n. The recurrence is needed for the command GetCoeffSubsFast.";
+DEToRE::usage="DEToRE[diffeq,g,h,z,n] produces the underlying recurrences of the differential equation 'diffeq' in g[z] and the inhomogenous part h[z] in n. The recurrence is needed for the command GetCoeffSubsFast.";
 
-GetCoeffSubsFast::usage="GetCoeffSubsFast[initialL,diffeq,receq,g,h,z,n,nc,nlogs,start,precision,noKernels] computes the list of substitutiuons of all coefficients in a power-log expansion ansatz solution to a differential equation in terms of unconstrained coefficients (to be determined by matching conditions).
+RecToListHorner::usage="RecToListHorner[rec,initialL,start,end,g[n]] takes the recurrence 'rec' in g[n]  and a list of initial values 'initialL' whose first entry represents the value at n=start. The output is the prolongation of of the sequence up to n=end that satifies the input recurrence."
+
+GetCoeffSubsFast::usage="GetCoeffSubsFast[initialL,diffeq,receq,g,h,z,n,nc,start,nlogs,precision,noKernels] computes the list of substitutiuons of all coefficients in a power-log expansion ansatz solution to a differential equation in terms of unconstrained coefficients (to be determined by matching conditions).
 
 The input variables are 
 'initialL: the number of initial values in a to prolong the expansion coefficients by the underlying recurrence receq.
@@ -129,13 +135,13 @@ The input variables are
 'noKernels'n: If the option UseFlintByC is set to False, the Mathematica parallelization can be utilized. If a certain number of kernels are launched, they will be used. Alternatively, one define with 'noKernels' a positive integer. Then the kernels are launched as optimally needed but does not load more than noKernels. If UseFlintByC is set to True, then up to 'noKernels' many threads are used by the C-backend.
 
 Remarks: 
-'receq' can be derived by the command REtoDE.
+'receq' can be derived by the command DEToRE.
 'initialL', 'start' and 'nlogs' can be derived by the command GetCoeffSubs.
 ";
 
 
 (* ::Input::Initialization:: *)
-NumberOfInitialValues::usage="NumberOfInitialValues[receq,g[n]] determines the number of initial values needed to prolong the sequence (under the assumption that the sequence is two-sided and the negative entries are zero.";
+NumberOfInitialValues::usage="NumberOfInitialValues[receq,g[n]] determines the number of initial values needed to prolong the sequence (under the assumption that the sequence is two-sided and the negative entries are zero).";
 
 
 (* ::Input::Initialization:: *)
@@ -144,6 +150,10 @@ UseFlintByC::usage="If this option is set to True, the package RecToValuesFLINT 
 
 BackendC::usage="Which of the availbalbe C-backend should be used. Currently available are \"rec_to_val_V1\" and \"rec_to_val_V2\". The first,\"rec_to_val_V1\", needs only very little memory. 
 The second, \"rec_to_val_V2\", is somewhat faster (up to 2 times) but needs more memory. This option is ignored if UseFlintByC->False.";
+
+BuildExpansion::usage="BuildExpansion[z, s, start, nlogs,nc] builds an expansion of the form
+                                 \!\(\*UnderoverscriptBox[\(\(\\\ \\\ \\\ \)\(\(\[Sum]\)\(\\\ \\\ \\\ \)\)\), \(j = start\), \(nc\)]\)\!\(\*UnderoverscriptBox[\(\[Sum]\), \(\(\\\ \)\(i = 0\)\), \(\(\\\ \\\ \)\(nlogs\)\)]\) \!\(\*SuperscriptBox[\(z\), \(j\)]\) \!\(\*SuperscriptBox[\(Log\), \(i\)]\)[z] "
+
 
 
 (* ::Input::Initialization:: *)
@@ -165,8 +175,12 @@ The output is a list. The first item in the list is the size of the extra coeffi
 Remark: The functions 'func1' and 'func2' must be built by the function call 'BuildMatchExpansions'."
 
 
+
+
+
+
 (* ::Input::Initialization:: *)
-GetBestPointMatch::usage="GetBestPointMatch[s,freecoeffs,testcoeff,delta,workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iterations] executes systematically MatchExpansions through the interval [lpoint,rpoint] by the disection method using a certain number of iterations specified by 'iteration'. Here 'nstartpts' determines the number of check points within the specified interval in which one searches a good point. The inputs 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
+GetBestPointMatch::usage="GetBestPointMatch[s,freecoeffs,testcoeff,delta,workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iterations] executes systematically MatchExpansions trough the interval [lpoint,rpoint] by the disection method using a certain number of iterations specified by 'iteration'. Here 'nstartpts' determines the number of check points within the specified interval in which one searches a good point. The inputs 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
 
 The output is a list. The first item is the best point represented as a rational number and the second entry is the expected precision using 'testcoeff'. The value 'prec' determines how good the rational number value of the found point approximtes the floating point representation. The parameters 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
 
@@ -175,6 +189,10 @@ Remark: To make this command feasible, it is executed in parallel. Thus suffient
     DistributeDefinitions[freecoeffs,testcoeff,funcA,funcB]
     ParallelEvaluate[$MaxExtraPrecision =10200]
     ParallelEvaluate[Get[''HolonomicContinuation.m'']]"
+
+
+(* ::Input:: *)
+(**)
 
 
 (* ::Input:: *)
@@ -197,9 +215,12 @@ will give
 
 
 (* ::Input::Initialization:: *)
-BuildMatchExpansions::usage="BuildMatchExpansions[FF, i, z, s, {smA, startA, ncA, nlogsA, ruleA}, {smB, startB, ncB, nlogsB, ruleB}, {coeff, j, k}] constructs two expansions to be matched. The output is a list containing the two expansions. The inputs 'FF' and 'i' are the form factor and the specific case (an integer) under consideration, respectively. The expansions are built in the variable 'z' using the function 'BuildExpansion'. The first expansion is built using the input parameters {smA,startA,ncA,nlogsA,ruleA}, where startA, ncA and nlogsA will be the input for the function 'BuildExpansion'. The variable 'smA' indicates the point in 's' around which we are doing the expansion, and 'ruleA' is a rule for replacing 'z' in terms of 's'. The second expansion is built using the input parameters {smB,startB,ncB,nlogsB,ruleB} in a similar way, but an extra term is added using 'coeff'. This should be a coefficient we know beforehand to be equal to zero, which we add to the expansion in order to be able to determine the precision of our calculation. The values of 'j' and 'k' are such that the extra term added is given by coeff*z^j*Log[z]^k.
+BuildMatchExpansions::usage="BuildMatchExpansions[FF, i, z, s, {smA, startA, nlogsA, ncA,ruleA}, {smB, startB, nlogsB, ncB, ruleB}, {coeff, j, k}] constructs two expansions to be matched. The output is a list containing the two expansions. The inputs 'FF' and 'i' are the form factor and the specific case (an integer) under consideration, respectively. The expansions are built in the variable 'z' using the function 'BuildExpansion'. The first expansion is built using the input parameters {smA,startA,nlogsA,ncA,ruleA}, where startA, ncA and nlogsA will be the input for the function 'BuildExpansion'. The variable 'smA' indicates the point in 's' around which we are doing the expansion, and 'ruleA' is a rule for replacing 'z' in terms of 's'. The second expansion is built using the input parameters {smB,startB,nlogsB,ncB,ruleB} in a similar way, but an extra term is added using 'coeff'. This should be a coefficient we know beforehand to be equal to zero, which we add to the expansion in order to be able to determine the precision of our calculation. The values of 'j' and 'k' are such that the extra term added is given by coeff*z^j*Log[z]^k.
 
 In order to use this function, the list of coefficient substitutions must be available for both expansions, as well as the numerical solution of the free coefficients of the first expansion, since 'BuildMatchExpansions' looks for this information in order to build the expansions, based on the values of 'smA' and 'smB'."
+
+EvalFunction::usage="EvalFunction[func,s,point,prec] evaluates the function func (generated by BuildMatchExpansion) in s at the value point with the precision prec." 
+
 
 
 
@@ -223,9 +244,10 @@ If[expr===0,0,newlist] ]
 
 
 (* ::Input::Initialization:: *)
-Options[FindIndicialShift]={"Initial shift"->7,"Details"->"no"};
+Options[FindIndicialShift]={"Initial shift"->7,"Details"->False};
 
-FindIndicialShift[diffeqz_,g_,z_,\[Alpha]_,OptionsPattern[]]:=Module[{r,j,Z,k,inishift,shift,i,n,test,indicial1,indicial2,indicial3,indicial4},
+FindIndicialShift[diffeqzIn_Equal,g_Symbol,z_Symbol,\[Alpha]_,OptionsPattern[]]:=Module[{r,j,Z,k,inishift,shift,i,n,test,indicial1,indicial2,indicial3,indicial4,diffeqz},
+diffeqz=diffeqzIn[[1]]-diffeqzIn[[2]];
 inishift=OptionValue["Initial shift"];
 r=Exponent[diffeqz /. Derivative[j_][g][z]:>Z^j,Z]; (* Order of the differential equation *)
 shift=inishift;
@@ -236,22 +258,23 @@ indicial3=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z
 indicial4=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-4+k+\[Alpha]) ,1]/. k->0]]];
 test=Not[{indicial1,indicial2,indicial3,indicial4}==={0,0,0,0}];
 While[test,
-shift=shift-1;    If[OptionValue["Details"]=="yes",Print[shift]]; 
+shift=shift-1;    If[OptionValue["Details"]==True,Print[shift]]; 
 indicial1=indicial2;
 indicial2=indicial3;
 indicial3=indicial4;
 indicial4=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift-4+k+\[Alpha]) ,1]/. k->0]]];
- If[OptionValue["Details"]=="yes",Print[{indicial1,indicial2,indicial3,indicial4}]];
+ If[OptionValue["Details"]==True,Print[{indicial1,indicial2,indicial3,indicial4}]];
 test=Not[{indicial1,indicial2,indicial3,indicial4}==={0,0,0,0}]];
 shift ]
 
 
 (* ::Input::Initialization:: *)
-Options[CheckIndicial]={"Initial shift"->7,"Details"->"no"};
+Options[CheckIndicial]={"Initial shift"->7,"Details"->False};
 
-CheckIndicial[diffeqz_,g_,z_,\[Alpha]_,OptionsPattern[]]:=Module[{r,shift,j,Z,indicial,k,n,sol,solseq,integerq,halfintegerq},
+CheckIndicial[diffeqzIn_Equal,g_Symbol _,z_Symbol,\[Alpha]_,OptionsPattern[]]:=Module[{r,shift,j,Z,indicial,k,n,sol,solseq,integerq,halfintegerq,diffeqz},
+diffeqz=diffeqzIn[[1]]-diffeqzIn[[2]];
 r=Exponent[diffeqz /. Derivative[j_][g][z]:>Z^j,Z]; (* order of the differentia equation *) 
-shift=FindIndicialShift[diffeqz,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]];
+shift=FindIndicialShift[diffeqzIn,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]];
 indicial=RemoveRational[Factor[FunctionExpand[Coefficient[Expand[diffeqz /. g[z]->z^(\[Alpha]+k) /. Derivative[n_][g][z]->D[z^(\[Alpha]+k),{z,n}]],z^(-r+shift+k+\[Alpha]) ,1]/. k->0]]];
 sol=Solve[indicial==0,\[Alpha]];
 solseq=Table[sol[[i,1,2]],{i,1,Length[sol]}]; (* list of values of the solutions to the indicial equation *)
@@ -264,8 +287,12 @@ True,Print["The indicial equation has solutions outside of the set of integers a
 indicial ]
 
 
-GetDEQInf[deIn_, {s_,spt_}, g_,z_]:=
-Module[{de=deIn,derivsubs,ord,sign,inhompart,exp,j},
+Options[GetDEQInf]={"RootPoint"->False};
+
+
+GetDEQInf[deIn_Equal, {s_Symbol,spt_}, g_Symbol,z_Symbol,opts:OptionsPattern[]]:=
+Module[{de,derivsubs,ord,sign,inhompart,exp,j,r},
+de=deIn[[1]]-deIn[[2]];
 ord=Max[Cases[{de},Derivative[A_][_][_]->A,Infinity],0];
 derivsubs={Derivative[1][g][s]->z^2*Derivative[1][g][z]};
 sign=If[spt===-Infinity,-1,1];
@@ -273,6 +300,35 @@ Do[
 	derivsubs=Append[derivsubs,D[g[s],{s,j+1}]->-sign*Expand[z^2*D[derivsubs[[j,2]],z]]];
 ,{j,ord}];
 de=Collect[de /. derivsubs/. s->sign/z /.{g[_]->g[z]},{Derivative[_][g][z],g[z]},Expand];
+If[OptionValue["RootPoint"]===True,
+derivsubs={\!\(\*SuperscriptBox[\(g\), 
+TagBox[
+RowBox[{"(", "1", ")"}],
+Derivative],
+MultilineFunction->None]\)[z]->1/2/u*\!\(\*SuperscriptBox[\(g\), 
+TagBox[
+RowBox[{"(", "1", ")"}],
+Derivative],
+MultilineFunction->None]\)[u]};
+Do[
+derivsubs=Append[derivsubs,D[g[z],{z,j+1}]->Expand[1/2/u*D[derivsubs[[j,2]],u]]],
+{j,ord}
+];
+de=Collect[de/. derivsubs/. z->u^2 /. g[u^2]->g[u] ,{\!\(\*SuperscriptBox[\(g\), 
+TagBox[
+RowBox[{"(", "_", ")"}],
+Derivative],
+MultilineFunction->None]\)[u],g[u]},Expand];
+de=de/.u->z;
+];
+r=Exponent[Expand[de/. z->1/z],z];
+If[r>0,
+de=Collect[z^r*de,{g[z], \!\(\*SuperscriptBox[\(g\), 
+TagBox[
+RowBox[{"(", "_", ")"}],
+Derivative],
+MultilineFunction->None]\)[z]},Expand];
+];
 inhompart=de /. Derivative[_][g][z]->0 /. g[z]->0;
 If[inhompart=!=0,
 de=de-inhompart;
@@ -280,45 +336,40 @@ de=Collect[D[-inhompart,z]*de-(-inhompart)*D[de,z],{g[z],Derivative[_][g][z]},Ex
 ];
 exp=Exponent[Expand[de /. z->1/z],z];
 de=Collect[z^exp*de,{g[z], Derivative[_][g][z]},Expand];
-MakeIntegerDE[de,g[z]]
+MakeIntegerDE[de,g[z]]==0
 ]
 
 
 (* ::Input::Initialization:: *)
-Options[GetDEQspt]={"Print s-point"->"no","Check indicial equation"->"no","Initial shift"->7,"Details"->"no"};
+Options[GetDEQspt]={"Print s-point"->False,"Check indicial equation"->False,"Initial shift"->7,"Details"->False,"RootPoint"->False};
 
-GetDEQspt[diffeqs_,{s_,spt_},g_,z_,qlist_,opts:OptionsPattern[]]:=Module[{diffeqz,inhompart,hompart,homdiffeqz,res},
-diffeqz=GetDEQsptInternal[diffeqs,{s,spt},g,z,qlist,opts];
+GetDEQspt[diffeqsIn_Equal,{s_Symbol,spt_},g_Symbol,z_Symbol,opts:OptionsPattern[]]:=Module[{diffeqs,diffeqz,inhompart,hompart,homdiffeqz,res},
+diffeqs=diffeqsIn[[1]]-diffeqsIn[[2]];
+diffeqz=GetDEQsptInternal[diffeqs,{s,spt},g,z,opts];
 inhompart=diffeqz /. Derivative[_][g][z]->0 /. g[z]->0; (* inhomogeneous part of the differential equation *) 
 
 hompart=diffeqz-inhompart; (* homogeneous part of the differential equation *) 
 
 
 res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],Derivative[_][g][z]},Expand]]; (* homogenization of the differential equation (only if needed) *)
-If[OptionValue["Print s-point"]=="yes",Print[spt],Null];If[OptionValue["Check indicial equation"]=="no",Null,CheckIndicial[res,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
-MakeIntegerDE[res,g[z]]
+If[OptionValue["Print s-point"]==True,Print[spt],Null];If[OptionValue["Check indicial equation"]==False,Null,CheckIndicial[res==0,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
+MakeIntegerDE[res,g[z]]==0
  ]
 
 
 (* ::Input::Initialization:: *)
-GetDEQsptInternal[diffeqs_,{s_,spt_},g_,z_,qlist_,OptionsPattern[]]:=Module[ {nderiv,diffeqz,n,derivsubs,Z,newderiv,j},
-nderiv=Exponent[diffeqs /. Derivative[n_][g][s]->Z^n,Z]+3;
-diffeqz=Which[
-Not[MemberQ[qlist,spt]] && spt<0,   Collect[diffeqs /. s->z+spt /. Derivative[n_][g][z+spt]->Derivative[n][g][z] /. g[z+spt]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
-Not[MemberQ[qlist,spt]] && spt>0,   Collect[diffeqs /. s->spt-z /. Derivative[n_][g][spt-z]->(-1)^n Derivative[n][g][z] /. g[spt-z]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
-MemberQ[qlist,spt] && spt<0,     
-derivsubs={Derivative[1][g][s]->1/2/z*Derivative[1][g][z]};
-For[j=1,j<=nderiv,j++,
-newderiv=D[g[s],{s,j+1}]->Expand[1/2/z*D[derivsubs[[j,2]],z]];
-derivsubs=Append[derivsubs,newderiv];
-];
-Collect[diffeqs /. derivsubs/. s->z^2+spt /. g[z^2+spt]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
-MemberQ[qlist,spt] && spt>0,     derivsubs={Derivative[1][g][s]->-1/2/z*Derivative[1][g][z]};
-For[j=1,j<=nderiv,j++,
-newderiv=D[g[s],{s,j+1}]->Expand[-1/2/z*D[derivsubs[[j,2]],z]];
-derivsubs=Append[derivsubs,newderiv];
-];
-Collect[diffeqs /. derivsubs/. s->spt-z^2 /. g[spt-z^2]->g[z] ,{Derivative[_][g][z],g[z]},Expand]  
+Options[GetDEQsptInternal]=Options[GetDEQspt];
+
+
+(* ::Input::Initialization:: *)
+GetDEQsptInternal[diffeqs_,{s_,spt_},g_,z_,OptionsPattern[]]:=Module[ {nderiv,diffeqz,n,derivsubs,Z,newderiv,j},nderiv=Exponent[diffeqs /. Derivative[n_][g][s]->Z^n,Z]+3;diffeqz=Which[
+OptionValue["RootPoint"]===False && spt<0,   Collect[diffeqs /. s->z+spt /. Derivative[n_][g][z+spt]->Derivative[n][g][z] /. g[z+spt]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
+OptionValue["RootPoint"]===False && spt>0,   Collect[diffeqs /. s->spt-z /. Derivative[n_][g][spt-z]->(-1)^n Derivative[n][g][z] /. g[spt-z]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
+OptionValue["RootPoint"]===True && spt<0,     derivsubs={Derivative[1][g][s]->1/2/z*Derivative[1][g][z]};For[j=1,j<=nderiv,j++,
+newderiv=D[g[s],{s,j+1}]->Expand[1/2/z*D[derivsubs[[j,2]],z]];derivsubs=Append[derivsubs,newderiv];
+];Collect[diffeqs /. derivsubs/. s->z^2+spt /. g[z^2+spt]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
+OptionValue["RootPoint"]===True && spt>0,     derivsubs={Derivative[1][g][s]->-1/2/z*Derivative[1][g][z]};For[j=1,j<=nderiv,j++,newderiv=D[g[s],{s,j+1}]->Expand[-1/2/z*D[derivsubs[[j,2]],z]];derivsubs=Append[derivsubs,newderiv];
+];Collect[diffeqs /. derivsubs/. s->spt-z^2 /. g[spt-z^2]->g[z] ,{Derivative[_][g][z],g[z]},Expand]
 ]; 
 diffeqz
 ]
@@ -367,28 +418,37 @@ OptionValue["Method"]=="Optimal split",   OptimalSplit[T,nsplit] ]  ]
 
 
 (* ::Input::Initialization:: *)
-Options[ParallelGetDEQspt]={"Method"->"Optimal split","Print s-point"->"no","Check indicial equation"->"no","Initial shift"->7,"Details"->"no"};
+Options[ParallelGetDEQspt]={"Method"->"Optimal split","Print s-point"->False,"Check indicial equation"->False,"Initial shift"->7,"Details"->False,"RootPoint"->False};
 
-ParallelGetDEQspt[diffeq_,{s_,spt_},g_,z_,qlist_,nsplit_,OptionsPattern[]]:=Module[ {diffeqlist,l,i,T,diffeqz,inhompart,hompart,\[Alpha],res},
-diffeqlist=SplitDiffEq[diffeq,g,s,nsplit,"Method"->OptionValue["Method"]];
-l=Length[diffeqlist];
+ParallelGetDEQspt[diffeq_Equal,{s_Symbol,spt_},g_Symbol,z_Symbol,nsplit_Integer,OptionsPattern[]]:=Module[ {diffeqlist,l,i,T,diffeqz,inhompart,hompart,\[Alpha],res},
+diffeqlist=SplitDiffEq[diffeq[[1]]-diffeq[[2]],g,s,nsplit,"Method"->OptionValue["Method"]];
+l=Length[diffeqlist]; (* Print[l]; *)
 DistributeDefinitions[diffeqlist,GetDEQsptInternal];
 
-T=ParallelTable[GetDEQsptInternal[diffeqlist[[i]],{s,spt},g,z,qlist],{i,1,l}];
+T=ParallelTable[GetDEQsptInternal[diffeqlist[[i]],{s,spt},g,z],{i,1,l}];
 diffeqz=Plus@@T;
-inhompart=diffeqz /. Derivative[_][g][z]->0 /. g[z]->0;
+inhompart=diffeqz /. \!\(\*SuperscriptBox[\(g\), 
+TagBox[
+RowBox[{"(", "_", ")"}],
+Derivative],
+MultilineFunction->None]\)[z]->0 /. g[z]->0;
 hompart=diffeqz-inhompart;
-res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],Derivative[_][g][z]},Expand]];
-If[OptionValue["Print s-point"]=="yes",Print[spt],Null];
-If[OptionValue["Check indicial equation"]=="no",Null,CheckIndicial[res,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
-MakeIntegerDE[res,g[z]]]
+res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],\!\(\*SuperscriptBox[\(g\), 
+TagBox[
+RowBox[{"(", "_", ")"}],
+Derivative],
+MultilineFunction->None]\)[z]},Expand]];
+If[OptionValue["Print s-point"]==True,Print[spt],Null];
+If[OptionValue["Check indicial equation"]==False,Null,CheckIndicial[res==0,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
+MakeIntegerDE[res,g[z]]==0
+]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*Produce coefficient relations (find truncated series solutions)*)
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Get ansatz parameters*)
 
 
@@ -397,13 +457,14 @@ Options[GetAnsatzParameters]={"Regular Point"->False};
 
 
 (* ::Input::Initialization:: *)
-GetAnsatzParameters[diffeq_,g_,z_,a_,teststart_,testnlogs_,nc_,opts___Rule]:=GetAnsatzParametersInternal[diffeq,g,z,a,teststart,testnlogs,nc,opts]//ToStringForm[#,a]&
+GetAnsatzParameters[diffeq_Equal,g_Symbol,z_Symbol,a_Symbol,teststart_Integer,testnlogs_Integer,nc_Integer,opts___Rule]:=GetAnsatzParametersInternal[diffeq[[1]]-diffeq[[2]],g,z,a,teststart,testnlogs,nc,opts]//ToStringForm[#,a]&
 
 
 (* ::Input::Initialization:: *)
-GetAnsatzParametersInternal[diffeq_,g_,z_,a_,teststart_,testnlogs_,nc_,opts___Rule]:=Module[{ncoeffs,ansatz,i,j,ord,n,r,deq,ansatzindeq,fv,lowestpower,coeffs,M,R,LogTerm,freepos,freecoeffs,coeffsubz,nlogs=testnlogs,start=teststart},
+GetAnsatzParametersInternal[diffeq_,g_,z_,a_,teststart_,testnlogs_,ncIn_,opts___Rule]:=Module[{ncoeffs,ansatz,i,j,ord,n,r,deq,ansatzindeq,fv,lowestpower,coeffs,M,R,LogTerm,freepos,freecoeffs,coeffsubz,nlogs=testnlogs,start=teststart,nc},
 
 ord=Max[Cases[diffeq,Derivative[n_][g][z]->n,Infinity],0];
+nc=Max[ncIn,ord+1];
 
 If[("Regular Point"/.{opts}/.Options[GetAnsatzParameters])===True,
 Return[{0,0,Table[a[0,i],{i,0,ord-1}]}];
@@ -461,15 +522,15 @@ start=-Exponent[ansatz /. z->1/z,z];
 {start,nlogs,freecoeffs}]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*DE to RE and analysis of RE*)
 
 
 (* ::Input::Initialization:: *)
 NumberOfInitialValues[rec_,g_[n_]]:=
 Module[{ord,lc,root},
-ord=Cases[rec[[1]],g[A_]->A-n,Infinity]//Max;
-lc=Coefficient[rec[[1]],g[ord+n]];
+ord=Cases[rec[[1]]-rec[[2]],g[A_]->A-n,Infinity]//Max;
+lc=Coefficient[rec[[1]]-rec[[2]],g[ord+n]];
 Max[(FindIntegerRoots[lc,n]//Max)-ord+1,0]
 ]
 
@@ -507,21 +568,25 @@ equ=LinearCollectP[equIn,MySum[__],SpecFactor[#,0.2]&];
 equ=If[Head[equ]===Plus,Apply[List,equ],{equ}];
 equ=equ/.(MySum[A_,B_]/;Head[A]===Times):>Select[A,!FreeQ[#,x]&&FreeQ[#,B[[1]]]&]MySum[Select[A,!(!FreeQ[#,x]&&FreeQ[#,B[[1]]])&],B];
 
-
 den=Apply[PolynomialLCM,Denominator[equ]];
 
 ord=0;
 
 equ=equ*den;
-equ=Table[If[Head[equ[[i]]]===Times,Map[TimeConstrained[Factor[#],10,#]&,equ[[i]]],TimeConstrained[equ[[i]],10,equ[[i]]]],{i,Length[equ]}];
-
 
 equ=Map[
 (#/.MySum[A_,{B_,C_,D_}]:>Sum[(A/.N->N+kk)//MyNormalize,{kk,-Exponent[#,x],ord}])&,
 equ
 ];
 equ=equ/.MyPower[x,N]->1;
-equ=Map[Collect[#,INT[__][_],ExpandTogether[Coefficient[#,x,0]]&]&,equ];
+
+If[System`Parallel`$SubKernel===True||Kernels[]==={}||ByteCount[equ]/Length[equ]<100000,
+equ=Map[Collect[#,INT[__][_],ExpandTogether[Coefficient[#,x,0]]&]&,equ],
+equ=ParallelMap[Collect[#,INT[__][_],ExpandTogether[Coefficient[#,x,0]]&]&,equ]
+];
+
+equ=ParallelMap[Collect[#,INT[__][_],ExpandTogether[Coefficient[#,x,0]]&]&,equ];
+
 equ=Collect[Apply[Plus,equ],INT[__][_],ExpandTogether[#]&];
 
 equ
@@ -608,21 +673,21 @@ degrees
 ]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Compute general solutions (slow) for initial values*)
 
 
 (* ::Input::Initialization:: *)
 Options[GetCoeffSubs]={"Number of coeffs to get parameters"->50};
 
-GetCoeffSubs[diffeqIn_,g_,z_,a_,teststart_,testnlogs_,nc_,OptionsPattern[]]:=Module[{diffeq,c,start,nlogs,ncoeffs,ansatz,i,j,ord,n,r,deq,ansatzindeq,fv,lowestpower,coeffs,shift,M,subst,vec,posL,posR,R,LogTerm,freepos,freecoeffs,coeffsubz,step,kernelL,ordD,const,pos,posZ,posExtra,MConst,varD,posVar,posVar2,varLS,blockSize,varCommon},
+GetCoeffSubs[diffeqIn_Equal,g_Symbol,z_Symbol,a_Symbol,teststart_Integer,testnlogs_Integer,nc_Integer,OptionsPattern[]]:=Module[{diffeq,c,start,nlogs,ncoeffs,ansatz,i,j,ord,n,r,deq,ansatzindeq,fv,lowestpower,coeffs,shift,M,subst,vec,posL,posR,R,LogTerm,freepos,freecoeffs,coeffsubz,step,kernelL,ordD,const,pos,posZ,posExtra,MConst,varD,posVar,posVar2,varLS,blockSize,varCommon},
 $startTimeUsed=TimeUsed[];
 
 If[True||Global`PrintStep===True,
 Print[{"Step1: Analyze the system",TimeUsed[]-$startTimeUsed,MaxMemoryUsed[]}];
 ];
 
-diffeq=MakeIntegerDE[diffeqIn,g[z]];
+diffeq=MakeIntegerDE[diffeqIn[[1]]-diffeqIn[[2]],g[z]];
 
 {start,nlogs,freecoeffs}=GetAnsatzParametersInternal[diffeq,g,z,a,teststart,testnlogs,OptionValue["Number of coeffs to get parameters"]];
 
@@ -825,7 +890,7 @@ Print[{"Step5: prepare output ",TimeUsed[]-$startTimeUsed,MaxMemoryUsed[]}];
 ];
 
 
-{{nlogs,start},coeffsubz }//ToStringForm[#,a]&
+{{start,nlogs},coeffsubz }//ToStringForm[#,a]&
 ]
 
 
@@ -942,7 +1007,7 @@ initialL=MapThread[List,{Table[k,{k,1,Length[varL]}],initialL}];
 
 If[Kernels[]=!={},
 Print["I enter the parallel mode with ",Length[Kernels[]]," kernels."];
-DistributeDefinitions[{JRecToListHorner,JEvalHorne}];
+DistributeDefinitions[{RecToListHorner,RecEvalHorner}];
 DistributeDefinitions[{rec,ord,aNoMin,DigitPrec,varL,h}];
 IsParallel=True;
 ];
@@ -954,8 +1019,8 @@ Print["Consider: ",{k,varL[[k]]}];
 Clear[FP];
 Clear[hP];
 hP[nn_Integer]:=Coefficient[h[nn],varL[[k]]];
-
-seqP=JRecToListHorner[rec,initialP,aNoMin,no,FP[n]];
+Global`store=RecToListHornerH[rec,initialP,aNoMin,no,FP[n]];
+seqP=RecToListHorner[rec,initialP,aNoMin,no,FP[n]];
 Clear[hP];
 seqP=Join[initialP,seqP];
 testNo=Min[no-aNoMin+1,Length[initialP]];
@@ -1207,9 +1272,10 @@ Options[GetCoeffSubsFast]={UseFlintByC->False,BackendC->"rec_to_val_V2"};
 
 
 (* ::Input::Initialization:: *)
-GetCoeffSubsFast[initialSIn_,de_,inputrec_,g_,h_,z_,a_,n_,noIn_,nlogs_,start_,precision_,maxKernels_Integer:0,opts:OptionsPattern[]]:=
-Module[{initialS,no,ord,initialSN,varKnown,initialStep,recStep,resL,prec,res,aVar,UseCCode},
+GetCoeffSubsFast[initialSIn_?VectorQ,deIn_Equal,inputrec_Equal,g_Symbol,h_,z_Symbol,a_Symbol,n_Symbol,noIn_Integer,start_Integer,nlogs_Integer,precision_,maxKernels_Integer:0,opts:OptionsPattern[]]:=
+Module[{de,initialS,no,ord,initialSN,varKnown,initialStep,recStep,resL,prec,res,aVar,UseCCode},
 no=noIn;
+de=deIn[[1]]-deIn[[2]];
 
 initialS=Complement[Map[#[[2]]&,initialSIn]//Variables,Map[#[[1]]&,initialSIn]//Variables];
 initialS=Join[MapThread[Rule,{initialS,initialS}],initialSIn];
@@ -1267,11 +1333,11 @@ resL
 (**)
 
 
-Clear[JEvalHorner]
-JEvalHorner[plist_?VectorQ,val_?IntegerQ]:=Fold[(val #1+#2)&,0,plist]
+Clear[RecEvalHorner]
+RecEvalHorner[plist_?VectorQ,val_?IntegerQ]:=Fold[(val #1+#2)&,0,plist]
 
-Clear[JRecToListHorner] 
-JRecToListHorner[recIn_Equal,initial_?VectorQ,start_?IntegerQ,end_?IntegerQ,g_[n_Symbol]]:=
+Clear[RecToListHorner] 
+RecToListHorner[recIn_Equal,initial_?VectorQ,start_?IntegerQ,end_?IntegerQ,g_[n_Symbol]]:=
 Module[{hh,rec,k,i,AAA,curNum,den,ord,values={},recK,oldDen,mul,vecGCD,lIndex,tIndex},
 	{tIndex,lIndex}=MinMax[Cases[recIn,g[AAA_]->AAA-n,Infinity]];
 	ord=lIndex-tIndex;
@@ -1281,7 +1347,7 @@ Module[{hh,rec,k,i,AAA,curNum,den,ord,values={},recK,oldDen,mul,vecGCD,lIndex,tI
 	den=LCM@@Denominator/@initial[[;;UpTo[ord]]];
 	curNum=den initial[[;;UpTo[ord]]];
 	Do[JPrint[k," : "];JPrint[" combinded: ",Timing[	
-		recK=JEvalHorner[#,k-lIndex]&/@rec[[-Length[curNum]-1;;]];
+		recK=RecEvalHorner[#,k-lIndex]&/@rec[[-Length[curNum]-1;;]];
 		AppendTo[values,recK[[;;-2]] . curNum];
 		values[[-1]]/=den;
 		values[[-1]]+=(hh/.n->(k-lIndex));
@@ -1543,7 +1609,7 @@ interval ]
 
 
 (* ::Input::Initialization:: *)
-Options[GetBestPointMatch]={"Show interval"->"no"};
+Options[GetBestPointMatch]={"Show interval"->False};
 
 GetBestPointMatch[s_,freecoeffs_,testcoeff_,delta_,workingprecision1_,wmp_,{lpoint_,rpoint_},nstartpts_,prec_,iterations_,OptionsPattern[]]:=Module[{interval,inipts,list,newlist,minval,p,L},
 interval=RefineMatchInterval[s,freecoeffs,testcoeff,delta,workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iterations];
@@ -1553,11 +1619,11 @@ newlist=Abs[list];
 minval=Min[Table[newlist[[i,2]],{i,1,Length[list]}]];
 p=Position[newlist,minval][[1,1]];
 L={Rationalize[list[[p,1]],prec],list[[p,2]]};
-If[OptionValue["Show interval"]=="yes",{interval,L},L] ]
+If[OptionValue["Show interval"]==True,{interval,L},L] ]
 
 
 (* ::Input::Initialization:: *)
-BuildExpansion[z_,s_,a_,start_,nc_,nlogs_]:=Module[{expansion,i,j,k},
+BuildExpansion[z_,s_,a_,start_,nlogs_,nc_]:=Module[{expansion,i,j,k},
 expansion=Sum[a[i,k]*z^k*Log[z]^i,{i,0,nlogs},{k,start,nc}];
 ToStringForm[expansion,a]
 ]
@@ -1576,13 +1642,14 @@ HornerFormH[CoefficientList[f,z]//Reverse,z]z^ord
 
 
 (* ::Input::Initialization:: *)
-BuildMatchExpansions[z_,s_,a_,{coeffsubsA_,solA_,startA_,ncA_,nlogsA_,ruleA_},{coeffsubsB_,startB_,ncB_,nlogsB_,ruleB_},{coeff_,j_,k_}]:=Module[{funcA,funcB,varA},
-funcA=(BuildExpansion[z,s,a,startA,ncA,nlogsA]/. coeffsubsA /. solA);
+BuildMatchExpansions[z_Symbol,s_Symbol,a_Symbol,{coeffsubsA_List,solA_List,startA_Integer,nlogsA_Integer,ncA_Integer,ruleA_Rule},{coeffsubsB_List,startB_Integer,nlogsB_Integer,ncB_Integer,ruleB_Rule},{coeff_,j_,k_}]:=Module[{funcA,funcB,varA},
+funcA=(BuildExpansion[z,s,a,startA,nlogsA,ncA]/. coeffsubsA /. solA);
 funcA=Collect[funcA,Log[_],PrepareHForm[#,z]&];
 funcA=funcA/. ruleA;
 
-funcB=(BuildExpansion[z,s,a,startB,ncB,nlogsB] /. coeffsubsB)+coeff*z^j*Log[z]^k;
-varA=Append[Table[ToExpression[ToString[a]~~ToString[kk]],{kk,0,nlogsB}],Log[_]];
+funcB=(BuildExpansion[z,s,a,startB,nlogsB,ncB] /. coeffsubsB)+coeff*z^j*Log[z]^k;
+varA=Prepend[Table[ToExpression[ToString[a]~~ToString[kk]][_],{kk,0,nlogsB}],Log[_]];
+
 funcB=Collect[funcB,varA,PrepareHForm[#,z]&];
 funcB=funcB/. ruleB;
 (* Output functions *)
@@ -1604,11 +1671,42 @@ Fold[(val #1+#2)&,0,plist]
 ];
 
 
-MatchExpansions[func1_,func2_,s_,freecoeffs_,coeff_,{point_,delta_},workingprecision_,mwp_]:=Module[{slist,func1vals,lhs,eqsys,sol,i,j,k,l},
+ParallelMatchExpansions[func1_,func2_,s_,freecoeffs_,coeff_,{point_,delta_},workingprecision_,mwp_]:=Module[{slist,func1vals,lhs,eqsys,sol,i,j,k,l},
 slist=Table[point+(j-1)*delta,{j,Length[freecoeffs]}];
 
-func1vals=Map[(SetPrecision[func1/.s->#/.HornerFormH[A_,B_]:> EvHorner[A,B,workingprecision+200],workingprecision]//Expand)&,slist];
-lhs=Map[(SetPrecision[func2 /. s->#/.HornerFormH[A_,B_]:> EvHorner[A,B,workingprecision+200],workingprecision+200]//Expand)&,slist] /.a_[r_]:>a[Round[r]];
+func1vals=ParallelMap[(MySetPrecision[func1/.s->#/.HornerFormH[A_,B_]:> EvHorner[A,B,workingprecision+200],workingprecision]//Expand)&,slist];
+lhs=ParallelMap[(MySetPrecision[func2 /. s->#/.HornerFormH[A_,B_]:> EvHorner[A,B,workingprecision+200],workingprecision+200]//Expand)&,slist] /.a_[r_]:>a[Round[r]];
+
+eqsys=MapThread[Equal,{lhs,func1vals}];
+
+eqsys=eqsys /. a_[r_]:>a[Round[r]];
+
+sol=NSolve[eqsys,Join[freecoeffs],workingprecision-mwp];
+
+If[sol==={},
+{"Failed",{}},
+sol=sol[[1]]/.A_[B_]:>A[Round[B]];
+{coeff /. sol, sol}
+]
+]
+
+
+MySetPrecision[f_,prec_]:=Module[{var,varS},
+	var=Variables[f];
+	varS=var/.A_Symbol[B_Integer]:>A[ToString[B]];
+	SetPrecision[f/.MapThread[Rule,{var,varS}],prec]/.MapThread[Rule,{varS,var}]
+];
+
+
+
+EvalFunction[func_,s_Symbol,point_,prec_Integer]:=
+	MySetPrecision[func/.s->point/.HornerFormH[A_,B_]:> EvHorner[A,B,prec+200],prec]
+
+
+MatchExpansions[func1_,func2_,s_Symbol,freecoeffs_,coeff_,{point_,delta_},workingprecision_,mwp_]:=Module[{slist,func1vals,lhs,eqsys,sol,i,j,k,l},
+slist=Table[point+(j-1)*delta,{j,Length[freecoeffs]}];
+func1vals=Map[(MySetPrecision[func1/.s->#/.HornerFormH[A_,B_]:> EvHorner[A,B,workingprecision+200],workingprecision]//Expand)&,slist];
+lhs=Map[(MySetPrecision[func2 /. s->#/.HornerFormH[A_,B_]:> EvHorner[A,B,workingprecision+200],workingprecision+200]//Expand)&,slist] /.a_[r_]:>a[Round[r]];
 
 eqsys=MapThread[Equal,{lhs,func1vals}];
 
@@ -1632,7 +1730,7 @@ T=Table[lpoint+(rpoint-lpoint)/(nstartpts-1)*(k-1),{k,1,nstartpts}];
 Drop[T,OptionValue["Drop"]]  ]
 
 
-(* ::Section::Closed:: *)
+(* ::Section:: *)
 (*End package*)
 
 
