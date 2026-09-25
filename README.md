@@ -24,6 +24,7 @@ where the flags -I -L and -Wl,-rpath, give, if necessary, the path to a suitable
 ## Documentation
 
 See the Mathematica notebook RunningExample.nb and the usage-messages of the individual functions available e.g. via ?GetCoeffSubsFast
+An example using a larger differential equation is contained in the notebook BigExample.nb
 
 ## Citing HolonomicContinuation
 

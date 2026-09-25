@@ -13,7 +13,7 @@
 
 
 (* ::Input::Initialization:: *)
-$HolonomicContinuationVersion="HolonomicContinuation Package by Abilio De Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.2 (09/07/2026)";
+$HolonomicContinuationVersion="HolonomicContinuation Package by Abilio de Freitas, Jakob Obrovsky and Carsten Schneider; RISC Linz \[LongDash] V 1.4 (24/09/2026)";
 If[TrueQ[$Notebooks],CellPrint[Cell[BoxData[$HolonomicContinuationVersion],"Print",FontColor->RGBColor[0,0,0],CellFrame->0.5,Background->RGBColor[0.796887,0.789075,0.871107]]],
 Print[$HolonomicContinuationVersion]];
 
@@ -61,7 +61,6 @@ Options:
 \"Print s-point\" can be set to True, in which case the value of 'spt' will be printed, or False, in which case it won't. Default: False.
 \"Check indicial equation\" can be set either to True, in which case a printout appears indicating what type of solutions the indicial equation has (this is done using the function 'CheckIndicial') or False, in which case it won't.  Default: False
 \"RootPoint\" defines if the point is rooted.."
-
 
 
 
@@ -176,9 +175,6 @@ Remark: The functions 'func1' and 'func2' must be built by the function call 'Bu
 
 
 
-
-
-
 (* ::Input::Initialization:: *)
 GetBestPointMatch::usage="GetBestPointMatch[s,freecoeffs,testcoeff,delta,workingprecision1,wmp,{lpoint,rpoint},nstartpts,prec,iterations] executes systematically MatchExpansions trough the interval [lpoint,rpoint] by the disection method using a certain number of iterations specified by 'iteration'. Here 'nstartpts' determines the number of check points within the specified interval in which one searches a good point. The inputs 's','freecoeffs','testcoeff','delta','workingprecision1','wmp' are the same as described for MatchExpansions.
 
@@ -189,10 +185,6 @@ Remark: To make this command feasible, it is executed in parallel. Thus suffient
     DistributeDefinitions[freecoeffs,testcoeff,funcA,funcB]
     ParallelEvaluate[$MaxExtraPrecision =10200]
     ParallelEvaluate[Get[''HolonomicContinuation.m'']]"
-
-
-(* ::Input:: *)
-(**)
 
 
 (* ::Input:: *)
@@ -351,17 +343,18 @@ inhompart=diffeqz /. Derivative[_][g][z]->0 /. g[z]->0; (* inhomogeneous part of
 hompart=diffeqz-inhompart; (* homogeneous part of the differential equation *) 
 
 
-res=If[inhompart===0,diffeqz,Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],Derivative[_][g][z]},Expand]]; (* homogenization of the differential equation (only if needed) *)
-If[OptionValue["Print s-point"]==True,Print[spt],Null];If[OptionValue["Check indicial equation"]==False,Null,CheckIndicial[res==0,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
+res=If[inhompart===0,
+	diffeqz
+,
+	Collect[D[-inhompart,z]*hompart-(-inhompart)*D[hompart,z],{g[z],Derivative[_][g][z]},Expand]
+]; (* homogenization of the differential equation (only if needed) *)
+If[TrueQ[OptionValue["Print s-point"]],Print[spt]];If[OptionValue["Check indicial equation"]=!=False,CheckIndicial[res==0,g,z,\[Alpha],"Initial shift"->OptionValue["Initial shift"],"Details"->OptionValue["Details"]]];
 MakeIntegerDE[res,g[z]]==0
  ]
 
 
 (* ::Input::Initialization:: *)
 Options[GetDEQsptInternal]=Options[GetDEQspt];
-
-
-(* ::Input::Initialization:: *)
 GetDEQsptInternal[diffeqs_,{s_,spt_},g_,z_,OptionsPattern[]]:=Module[ {nderiv,diffeqz,n,derivsubs,Z,newderiv,j},nderiv=Exponent[diffeqs /. Derivative[n_][g][s]->Z^n,Z]+3;diffeqz=Which[
 OptionValue["RootPoint"]===False && spt<0,   Collect[diffeqs /. s->z+spt /. Derivative[n_][g][z+spt]->Derivative[n][g][z] /. g[z+spt]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
 OptionValue["RootPoint"]===False && spt>0,   Collect[diffeqs /. s->spt-z /. Derivative[n_][g][spt-z]->(-1)^n Derivative[n][g][z] /. g[spt-z]->g[z] ,{Derivative[_][g][z],g[z]},Expand],
@@ -579,13 +572,11 @@ equ=Map[
 equ
 ];
 equ=equ/.MyPower[x,N]->1;
-
-If[System`Parallel`$SubKernel===True||Kernels[]==={}||ByteCount[equ]/Length[equ]<100000,
+If[System`Parallel`$SubKernel===True||Kernels[]==={}||ByteCount[equ]/Length[equ]<1000000,
 equ=Map[Collect[#,INT[__][_],ExpandTogether[Coefficient[#,x,0]]&]&,equ],
 equ=ParallelMap[Collect[#,INT[__][_],ExpandTogether[Coefficient[#,x,0]]&]&,equ]
 ];
 
-equ=ParallelMap[Collect[#,INT[__][_],ExpandTogether[Coefficient[#,x,0]]&]&,equ];
 
 equ=Collect[Apply[Plus,equ],INT[__][_],ExpandTogether[#]&];
 
@@ -1223,9 +1214,6 @@ sol
 
 (* ::Input::Initialization:: *)
 Clear[MyNullSpaceQStandard];
-
-
-(* ::Input::Initialization:: *)
 MyNullSpaceQStandard[MIn_]:=Module[{M,solold={},p,t=True,Mp,sol,r,pprod,i,k=0},
 M=PrepareRows/@MIn;
 p=NextPrime[Developer`$MaxMachineInteger^19];
@@ -1248,18 +1236,12 @@ sol];
 
 (* ::Input::Initialization:: *)
 Clear[PrepareRows];
-
-
-(* ::Input::Initialization:: *)
 PrepareRows[r_]:=Module[{s},s=r*(LCM@@Denominator[r]);
 s/Max[GCD@@s,1]]
 
 
 (* ::Input::Initialization:: *)
 Clear[ReconstructRationalNumber]
-
-
-(* ::Input::Initialization:: *)
 ReconstructRationalNumber[n_,p_]:=If[n===0,0,(((#[[2,2]]/#[[1,2,2]])&)[Internal`HGCD[p,Mod[n,p]]]*2)/2];
 
 
